@@ -24,15 +24,19 @@ struct TripListView: View {
                     )
                 } else {
                     ForEach(trips) { trip in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(trip.title)
-                                .font(.headline)
+                        NavigationLink {
+                            TripDetailView(trip: trip)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(trip.title)
+                                    .font(.headline)
 
-                            Text(trip.createdAt, format: .dateTime.day().month().year())
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                                Text(viewModel.dateSummary(for: trip))
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.vertical, 4)
                         }
-                        .padding(.vertical, 4)
                     }
                     .onDelete { offsets in
                         viewModel.deleteTrips(trips, at: offsets, in: modelContext)

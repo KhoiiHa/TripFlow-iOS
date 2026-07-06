@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import MapKit
 import Testing
 @testable import TripFlow
 
@@ -13,6 +14,7 @@ struct TripFlowTests {
     private let tripService = TripService()
     private let stopService = StopService()
     private let timelineService = TimelineService()
+    private let mapService = MapService()
 
     @Test func createTripTrimsTitle() throws {
         let trip = try tripService.createTrip(title: "  Berlin 2026  ")
@@ -115,6 +117,21 @@ struct TripFlowTests {
         #expect(stop.scheduledDate == scheduledDate)
     }
 
+    @Test func createStopAppliesCoordinates() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+
+        let stop = try stopService.createStop(
+            title: "Hotel",
+            locationName: "",
+            latitude: 52.52,
+            longitude: 13.405,
+            for: trip
+        )
+
+        #expect(stop.latitude == 52.52)
+        #expect(stop.longitude == 13.405)
+    }
+
     @Test func updateStopAppliesValidatedValues() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let stop = try stopService.createStop(title: "Hotel", locationName: "Mitte", for: trip)
@@ -130,6 +147,44 @@ struct TripFlowTests {
         #expect(stop.title == "Museum")
         #expect(stop.locationName == "Zentrum")
         #expect(stop.scheduledDate == scheduledDate)
+    }
+
+    @Test func updateStopAppliesCoordinates() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let stop = try stopService.createStop(title: "Hotel", locationName: "", for: trip)
+
+        try stopService.updateStop(
+            stop,
+            title: "Hotel",
+            locationName: "",
+            scheduledDate: nil,
+            latitude: 52.52,
+            longitude: 13.405
+        )
+
+        #expect(stop.latitude == 52.52)
+        #expect(stop.longitude == 13.405)
+    }
+
+    @Test func updateStopKeepsExistingCoordinatesWhenNoCoordinatesAreProvided() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let stop = try stopService.createStop(
+            title: "Hotel",
+            locationName: "",
+            latitude: 52.52,
+            longitude: 13.405,
+            for: trip
+        )
+
+        try stopService.updateStop(
+            stop,
+            title: "Museum",
+            locationName: "",
+            scheduledDate: nil
+        )
+
+        #expect(stop.latitude == 52.52)
+        #expect(stop.longitude == 13.405)
     }
 
     @Test func updateStopRejectsEmptyTitle() throws {
@@ -186,6 +241,31 @@ struct TripFlowTests {
 
         #expect(timeline.days.isEmpty)
         #expect(timeline.unscheduledStops.map(\.title) == [hotel.title, museum.title])
+    }
+
+    @Test func mapStopsIncludesStopsWithValidCoordinatesInOrder() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        _ = try stopService.createStop(title: "Hotel", locationName: "Mitte", latitude: 52.52, longitude: 13.405, for: trip)
+        _ = try stopService.createStop(title: "Museum", locationName: "Zentrum", latitude: 52.51, longitude: 13.39, for: trip)
+
+        let mapStops = mapService.mapStops(for: trip)
+
+        #expect(mapStops.map(\.title) == ["Hotel", "Museum"])
+        #expect(mapStops[0].locationName == "Mitte")
+        #expect(mapStops[0].coordinate.latitude == 52.52)
+        #expect(mapStops[0].coordinate.longitude == 13.405)
+    }
+
+    @Test func mapStopsIgnoresStopsWithoutValidCoordinates() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        _ = try stopService.createStop(title: "No Coordinates", locationName: "", for: trip)
+        _ = try stopService.createStop(title: "Only Latitude", locationName: "", latitude: 52.52, for: trip)
+        _ = try stopService.createStop(title: "Invalid Latitude", locationName: "", latitude: 120, longitude: 13.405, for: trip)
+        _ = try stopService.createStop(title: "Hotel", locationName: "", latitude: 52.52, longitude: 13.405, for: trip)
+
+        let mapStops = mapService.mapStops(for: trip)
+
+        #expect(mapStops.map(\.title) == ["Hotel"])
     }
 
     private func testCalendar() -> Calendar {

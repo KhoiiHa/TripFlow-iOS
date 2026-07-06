@@ -16,6 +16,8 @@ struct StopService {
         title: String,
         locationName: String,
         scheduledDate: Date? = nil,
+        latitude: Double? = nil,
+        longitude: Double? = nil,
         for trip: Trip
     ) throws -> Stop {
         let values = try validate(title: title, locationName: locationName)
@@ -24,6 +26,8 @@ struct StopService {
             title: values.title,
             locationName: values.locationName,
             scheduledDate: scheduledDate,
+            latitude: latitude,
+            longitude: longitude,
             orderIndex: trip.stops.count,
             trip: trip
         )
@@ -34,12 +38,28 @@ struct StopService {
         return stop
     }
 
-    func updateStop(_ stop: Stop, title: String, locationName: String, scheduledDate: Date?) throws {
+    func updateStop(
+        _ stop: Stop,
+        title: String,
+        locationName: String,
+        scheduledDate: Date?,
+        latitude: Double? = nil,
+        longitude: Double? = nil
+    ) throws {
         let values = try validate(title: title, locationName: locationName)
 
         stop.title = values.title
         stop.locationName = values.locationName
         stop.scheduledDate = scheduledDate
+
+        if let latitude {
+            stop.latitude = latitude
+        }
+
+        if let longitude {
+            stop.longitude = longitude
+        }
+
         stop.updatedAt = Date()
         stop.trip?.updatedAt = Date()
     }

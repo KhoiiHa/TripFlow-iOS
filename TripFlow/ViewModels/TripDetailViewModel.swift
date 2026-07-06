@@ -19,6 +19,8 @@ final class TripDetailViewModel {
     var errorMessage: String?
     var newStopTitle = ""
     var newStopLocationName = ""
+    var newStopLatitudeText = ""
+    var newStopLongitudeText = ""
     var newStopScheduledDate: Date?
     var newStopHasScheduledDate = false
     var isShowingCreateStop = false
@@ -124,6 +126,8 @@ final class TripDetailViewModel {
     func showCreateStop() {
         newStopTitle = ""
         newStopLocationName = ""
+        newStopLatitudeText = ""
+        newStopLongitudeText = ""
         newStopScheduledDate = startDate ?? Date()
         newStopHasScheduledDate = false
         stopErrorMessage = nil
@@ -137,21 +141,31 @@ final class TripDetailViewModel {
 
     func createStop(for trip: Trip, in modelContext: ModelContext) {
         do {
+            let coordinates = try stopService.coordinates(
+                latitudeText: newStopLatitudeText,
+                longitudeText: newStopLongitudeText
+            )
             let stop = try stopService.createStop(
                 title: newStopTitle,
                 locationName: newStopLocationName,
                 scheduledDate: newStopHasScheduledDate ? newStopScheduledDate : nil,
+                latitude: coordinates.latitude,
+                longitude: coordinates.longitude,
                 for: trip
             )
             modelContext.insert(stop)
             newStopTitle = ""
             newStopLocationName = ""
+            newStopLatitudeText = ""
+            newStopLongitudeText = ""
             newStopScheduledDate = nil
             newStopHasScheduledDate = false
             stopErrorMessage = nil
             isShowingCreateStop = false
         } catch StopValidationError.emptyTitle {
             stopErrorMessage = "Bitte gib einen Namen fuer den Stop ein."
+        } catch StopValidationError.invalidCoordinates {
+            stopErrorMessage = "Bitte gib gueltige Koordinaten ein."
         } catch {
             stopErrorMessage = "Der Stop konnte nicht erstellt werden."
         }

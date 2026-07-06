@@ -24,6 +24,13 @@ struct StopDetailView: View {
                 TextField("Ort optional", text: $viewModel.locationName)
             }
 
+            Section("Koordinaten") {
+                TextField("Latitude optional", text: $viewModel.latitudeText)
+                    .keyboardType(.numbersAndPunctuation)
+                TextField("Longitude optional", text: $viewModel.longitudeText)
+                    .keyboardType(.numbersAndPunctuation)
+            }
+
             Section("Zeitpunkt") {
                 Toggle("Datum und Uhrzeit", isOn: $viewModel.hasScheduledDate)
                     .onChange(of: viewModel.hasScheduledDate) { _, newValue in

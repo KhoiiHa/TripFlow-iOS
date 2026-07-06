@@ -239,6 +239,13 @@ struct TripDetailView: View {
                     TextField("Ort optional", text: $viewModel.newStopLocationName)
                 }
 
+                Section("Koordinaten") {
+                    TextField("Latitude optional", text: $viewModel.newStopLatitudeText)
+                        .keyboardType(.numbersAndPunctuation)
+                    TextField("Longitude optional", text: $viewModel.newStopLongitudeText)
+                        .keyboardType(.numbersAndPunctuation)
+                }
+
                 Section("Zeitpunkt") {
                     Toggle("Datum und Uhrzeit", isOn: $viewModel.newStopHasScheduledDate)
                         .onChange(of: viewModel.newStopHasScheduledDate) { _, newValue in

@@ -132,6 +132,49 @@ struct TripFlowTests {
         #expect(stop.longitude == 13.405)
     }
 
+    @Test func coordinateInputParsesDecimalComma() throws {
+        let coordinates = try stopService.coordinates(
+            latitudeText: "52,52",
+            longitudeText: "13,405"
+        )
+
+        #expect(coordinates.latitude == 52.52)
+        #expect(coordinates.longitude == 13.405)
+    }
+
+    @Test func coordinateInputAllowsEmptyCoordinates() throws {
+        let coordinates = try stopService.coordinates(latitudeText: "", longitudeText: "   ")
+
+        #expect(coordinates.latitude == nil)
+        #expect(coordinates.longitude == nil)
+    }
+
+    @Test func coordinateInputRejectsPartialCoordinates() {
+        #expect(throws: StopValidationError.invalidCoordinates) {
+            try stopService.coordinates(latitudeText: "52.52", longitudeText: "")
+        }
+    }
+
+    @Test func coordinateInputRejectsOutOfRangeCoordinates() {
+        #expect(throws: StopValidationError.invalidCoordinates) {
+            try stopService.coordinates(latitudeText: "120", longitudeText: "13.405")
+        }
+    }
+
+    @Test func createStopRejectsInvalidCoordinates() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+
+        #expect(throws: StopValidationError.invalidCoordinates) {
+            try stopService.createStop(
+                title: "Hotel",
+                locationName: "",
+                latitude: 52.52,
+                longitude: nil,
+                for: trip
+            )
+        }
+    }
+
     @Test func updateStopAppliesValidatedValues() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let stop = try stopService.createStop(title: "Hotel", locationName: "Mitte", for: trip)
@@ -185,6 +228,28 @@ struct TripFlowTests {
 
         #expect(stop.latitude == 52.52)
         #expect(stop.longitude == 13.405)
+    }
+
+    @Test func updateStopClearsCoordinatesWhenRequested() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let stop = try stopService.createStop(
+            title: "Hotel",
+            locationName: "",
+            latitude: 52.52,
+            longitude: 13.405,
+            for: trip
+        )
+
+        try stopService.updateStop(
+            stop,
+            title: "Hotel",
+            locationName: "",
+            scheduledDate: nil,
+            updateCoordinates: true
+        )
+
+        #expect(stop.latitude == nil)
+        #expect(stop.longitude == nil)
     }
 
     @Test func updateStopRejectsEmptyTitle() throws {
@@ -259,9 +324,9 @@ struct TripFlowTests {
     @Test func mapStopsIgnoresStopsWithoutValidCoordinates() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         _ = try stopService.createStop(title: "No Coordinates", locationName: "", for: trip)
-        _ = try stopService.createStop(title: "Only Latitude", locationName: "", latitude: 52.52, for: trip)
-        _ = try stopService.createStop(title: "Invalid Latitude", locationName: "", latitude: 120, longitude: 13.405, for: trip)
         _ = try stopService.createStop(title: "Hotel", locationName: "", latitude: 52.52, longitude: 13.405, for: trip)
+        trip.stops.append(Stop(title: "Only Latitude", latitude: 52.52, orderIndex: 2, trip: trip))
+        trip.stops.append(Stop(title: "Invalid Latitude", latitude: 120, longitude: 13.405, orderIndex: 3, trip: trip))
 
         let mapStops = mapService.mapStops(for: trip)
 

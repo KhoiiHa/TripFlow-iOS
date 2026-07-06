@@ -99,4 +99,44 @@ struct TripFlowTests {
         #expect(firstStop.orderIndex == 0)
         #expect(secondStop.orderIndex == 1)
     }
+
+    @Test func createStopAppliesScheduledDate() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let scheduledDate = Date(timeIntervalSince1970: 1)
+
+        let stop = try stopService.createStop(
+            title: "Hotel",
+            locationName: "",
+            scheduledDate: scheduledDate,
+            for: trip
+        )
+
+        #expect(stop.scheduledDate == scheduledDate)
+    }
+
+    @Test func updateStopAppliesValidatedValues() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let stop = try stopService.createStop(title: "Hotel", locationName: "Mitte", for: trip)
+        let scheduledDate = Date(timeIntervalSince1970: 2)
+
+        try stopService.updateStop(
+            stop,
+            title: "  Museum  ",
+            locationName: "  Zentrum  ",
+            scheduledDate: scheduledDate
+        )
+
+        #expect(stop.title == "Museum")
+        #expect(stop.locationName == "Zentrum")
+        #expect(stop.scheduledDate == scheduledDate)
+    }
+
+    @Test func updateStopRejectsEmptyTitle() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let stop = try stopService.createStop(title: "Hotel", locationName: "", for: trip)
+
+        #expect(throws: StopValidationError.emptyTitle) {
+            try stopService.updateStop(stop, title: "   ", locationName: "", scheduledDate: nil)
+        }
+    }
 }

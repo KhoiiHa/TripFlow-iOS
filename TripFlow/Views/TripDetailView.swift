@@ -66,17 +66,21 @@ struct TripDetailView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(stops) { stop in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(stop.title)
-                                .font(.headline)
+                        NavigationLink {
+                            StopDetailView(stop: stop)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(stop.title)
+                                    .font(.headline)
 
-                            if stop.locationName.isEmpty == false {
-                                Text(stop.locationName)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                                if let subtitle = viewModel.stopSubtitle(for: stop) {
+                                    Text(subtitle)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
+                            .padding(.vertical, 4)
                         }
-                        .padding(.vertical, 4)
                     }
                     .onDelete { offsets in
                         viewModel.deleteStops(stops, at: offsets, from: trip, in: modelContext)

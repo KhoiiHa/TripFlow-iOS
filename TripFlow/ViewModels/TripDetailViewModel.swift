@@ -76,8 +76,34 @@ final class TripDetailViewModel {
 
     func sortedStops(for trip: Trip) -> [Stop] {
         trip.stops.sorted { first, second in
-            first.orderIndex < second.orderIndex
+            if let firstDate = first.scheduledDate, let secondDate = second.scheduledDate {
+                return firstDate < secondDate
+            }
+
+            if first.scheduledDate != nil {
+                return true
+            }
+
+            if second.scheduledDate != nil {
+                return false
+            }
+
+            return first.orderIndex < second.orderIndex
         }
+    }
+
+    func stopSubtitle(for stop: Stop) -> String? {
+        var details: [String] = []
+
+        if stop.locationName.isEmpty == false {
+            details.append(stop.locationName)
+        }
+
+        if let scheduledDate = stop.scheduledDate {
+            details.append(scheduledDate.formatted(.dateTime.day().month().year().hour().minute()))
+        }
+
+        return details.isEmpty ? nil : details.joined(separator: " - ")
     }
 
     func showCreateStop() {

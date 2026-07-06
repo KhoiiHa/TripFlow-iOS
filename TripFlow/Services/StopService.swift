@@ -12,17 +12,18 @@ enum StopValidationError: Error, Equatable {
 }
 
 struct StopService {
-    func createStop(title: String, locationName: String, for trip: Trip) throws -> Stop {
-        let normalizedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalizedLocationName = locationName.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard normalizedTitle.isEmpty == false else {
-            throw StopValidationError.emptyTitle
-        }
+    func createStop(
+        title: String,
+        locationName: String,
+        scheduledDate: Date? = nil,
+        for trip: Trip
+    ) throws -> Stop {
+        let values = try validate(title: title, locationName: locationName)
 
         let stop = Stop(
-            title: normalizedTitle,
-            locationName: normalizedLocationName,
+            title: values.title,
+            locationName: values.locationName,
+            scheduledDate: scheduledDate,
             orderIndex: trip.stops.count,
             trip: trip
         )
@@ -31,5 +32,26 @@ struct StopService {
         trip.updatedAt = Date()
 
         return stop
+    }
+
+    func updateStop(_ stop: Stop, title: String, locationName: String, scheduledDate: Date?) throws {
+        let values = try validate(title: title, locationName: locationName)
+
+        stop.title = values.title
+        stop.locationName = values.locationName
+        stop.scheduledDate = scheduledDate
+        stop.updatedAt = Date()
+        stop.trip?.updatedAt = Date()
+    }
+
+    private func validate(title: String, locationName: String) throws -> (title: String, locationName: String) {
+        let normalizedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedLocationName = locationName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard normalizedTitle.isEmpty == false else {
+            throw StopValidationError.emptyTitle
+        }
+
+        return (normalizedTitle, normalizedLocationName)
     }
 }

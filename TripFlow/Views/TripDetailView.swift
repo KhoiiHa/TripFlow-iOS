@@ -199,9 +199,24 @@ struct TripDetailView: View {
     private var createStopSheet: some View {
         NavigationStack {
             Form {
-                Section {
+                Section("Stop") {
                     TextField("Stop-Name", text: $viewModel.newStopTitle)
                     TextField("Ort optional", text: $viewModel.newStopLocationName)
+                }
+
+                Section("Zeitpunkt") {
+                    Toggle("Datum und Uhrzeit", isOn: $viewModel.newStopHasScheduledDate)
+                        .onChange(of: viewModel.newStopHasScheduledDate) { _, newValue in
+                            viewModel.setNewStopScheduledDateEnabled(newValue)
+                        }
+
+                    if viewModel.newStopHasScheduledDate {
+                        DatePicker(
+                            "Zeit",
+                            selection: newStopScheduledDateBinding,
+                            displayedComponents: [.date, .hourAndMinute]
+                        )
+                    }
                 }
 
                 if let stopErrorMessage = viewModel.stopErrorMessage {
@@ -227,6 +242,14 @@ struct TripDetailView: View {
                 }
             }
             .presentationDetents([.medium])
+        }
+    }
+
+    private var newStopScheduledDateBinding: Binding<Date> {
+        Binding {
+            viewModel.newStopScheduledDate ?? viewModel.startDate ?? Date()
+        } set: { newValue in
+            viewModel.newStopScheduledDate = newValue
         }
     }
 }

@@ -18,6 +18,8 @@ final class TripDetailViewModel {
     var errorMessage: String?
     var newStopTitle = ""
     var newStopLocationName = ""
+    var newStopScheduledDate: Date?
+    var newStopHasScheduledDate = false
     var isShowingCreateStop = false
     var stopErrorMessage: String?
 
@@ -110,8 +112,15 @@ final class TripDetailViewModel {
     func showCreateStop() {
         newStopTitle = ""
         newStopLocationName = ""
+        newStopScheduledDate = startDate ?? Date()
+        newStopHasScheduledDate = false
         stopErrorMessage = nil
         isShowingCreateStop = true
+    }
+
+    func setNewStopScheduledDateEnabled(_ isEnabled: Bool) {
+        newStopHasScheduledDate = isEnabled
+        newStopScheduledDate = isEnabled ? (newStopScheduledDate ?? startDate ?? Date()) : nil
     }
 
     func createStop(for trip: Trip, in modelContext: ModelContext) {
@@ -119,11 +128,14 @@ final class TripDetailViewModel {
             let stop = try stopService.createStop(
                 title: newStopTitle,
                 locationName: newStopLocationName,
+                scheduledDate: newStopHasScheduledDate ? newStopScheduledDate : nil,
                 for: trip
             )
             modelContext.insert(stop)
             newStopTitle = ""
             newStopLocationName = ""
+            newStopScheduledDate = nil
+            newStopHasScheduledDate = false
             stopErrorMessage = nil
             isShowingCreateStop = false
         } catch StopValidationError.emptyTitle {

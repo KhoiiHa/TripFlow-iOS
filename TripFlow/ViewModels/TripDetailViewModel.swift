@@ -25,6 +25,7 @@ final class TripDetailViewModel {
     var newStopHasScheduledDate = false
     var isShowingCreateStop = false
     var stopErrorMessage: String?
+    var isResolvingNewStopCoordinates = false
 
     var canSave: Bool {
         title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
@@ -38,13 +39,15 @@ final class TripDetailViewModel {
     private let stopService: StopService
     private let timelineService: TimelineService
     private let mapService: MapService
+    private let geocodingService: any LocationGeocoding
 
     init(
         trip: Trip,
         tripService: TripService = TripService(),
         stopService: StopService = StopService(),
         timelineService: TimelineService = TimelineService(),
-        mapService: MapService = MapService()
+        mapService: MapService = MapService(),
+        geocodingService: any LocationGeocoding = LocationGeocodingService()
     ) {
         title = trip.title
         startDate = trip.startDate
@@ -55,6 +58,7 @@ final class TripDetailViewModel {
         self.stopService = stopService
         self.timelineService = timelineService
         self.mapService = mapService
+        self.geocodingService = geocodingService
     }
 
     func setStartDateEnabled(_ isEnabled: Bool) {
@@ -131,6 +135,7 @@ final class TripDetailViewModel {
         newStopScheduledDate = startDate ?? Date()
         newStopHasScheduledDate = false
         stopErrorMessage = nil
+        isResolvingNewStopCoordinates = false
         isShowingCreateStop = true
     }
 
@@ -171,11 +176,31 @@ final class TripDetailViewModel {
         }
     }
 
+    func fillNewStopCoordinatesFromLocationName() async {
+        isResolvingNewStopCoordinates = true
+        defer { isResolvingNewStopCoordinates = false }
+
+        do {
+            let coordinate = try await geocodingService.coordinate(for: newStopLocationName)
+            newStopLatitudeText = Self.coordinateText(coordinate.latitude)
+            newStopLongitudeText = Self.coordinateText(coordinate.longitude)
+            stopErrorMessage = nil
+        } catch LocationGeocodingError.emptyQuery {
+            stopErrorMessage = "Bitte gib zuerst einen Ort ein."
+        } catch {
+            stopErrorMessage = "Fuer diesen Ort wurden keine Koordinaten gefunden."
+        }
+    }
+
     func deleteStops(_ stops: [Stop], at offsets: IndexSet, from trip: Trip, in modelContext: ModelContext) {
         for index in offsets {
             modelContext.delete(stops[index])
         }
 
         trip.updatedAt = Date()
+    }
+
+    private static func coordinateText(_ coordinate: Double) -> String {
+        String(coordinate)
     }
 }

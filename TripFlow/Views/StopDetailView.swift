@@ -29,6 +29,15 @@ struct StopDetailView: View {
                     .keyboardType(.numbersAndPunctuation)
                 TextField("Longitude optional", text: $viewModel.longitudeText)
                     .keyboardType(.numbersAndPunctuation)
+
+                Button {
+                    Task {
+                        await viewModel.fillCoordinatesFromLocationName()
+                    }
+                } label: {
+                    Label("Aus Ort setzen", systemImage: "location")
+                }
+                .disabled(viewModel.locationName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isResolvingCoordinates)
             }
 
             Section("Zeitpunkt") {

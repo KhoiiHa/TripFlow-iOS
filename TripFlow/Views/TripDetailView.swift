@@ -244,6 +244,15 @@ struct TripDetailView: View {
                         .keyboardType(.numbersAndPunctuation)
                     TextField("Longitude optional", text: $viewModel.newStopLongitudeText)
                         .keyboardType(.numbersAndPunctuation)
+
+                    Button {
+                        Task {
+                            await viewModel.fillNewStopCoordinatesFromLocationName()
+                        }
+                    } label: {
+                        Label("Aus Ort setzen", systemImage: "location")
+                    }
+                    .disabled(viewModel.newStopLocationName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isResolvingNewStopCoordinates)
                 }
 
                 Section("Zeitpunkt") {

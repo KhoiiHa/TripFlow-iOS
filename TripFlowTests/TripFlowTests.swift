@@ -347,6 +347,53 @@ struct TripFlowTests {
         #expect(region.span.longitudeDelta >= 0.05)
     }
 
+    @Test @MainActor func tripDetailGeocodingFillsNewStopCoordinates() async {
+        let trip = Trip(title: "Berlin")
+        let viewModel = TripDetailViewModel(
+            trip: trip,
+            geocodingService: StubLocationGeocodingService(
+                result: .success(GeocodedCoordinate(latitude: 52.52, longitude: 13.405))
+            )
+        )
+        viewModel.newStopLocationName = "Berlin"
+
+        await viewModel.fillNewStopCoordinatesFromLocationName()
+
+        #expect(viewModel.newStopLatitudeText == "52.52")
+        #expect(viewModel.newStopLongitudeText == "13.405")
+        #expect(viewModel.stopErrorMessage == nil)
+    }
+
+    @Test @MainActor func stopDetailGeocodingFillsCoordinates() async {
+        let stop = Stop(title: "Hotel", locationName: "Berlin")
+        let viewModel = StopDetailViewModel(
+            stop: stop,
+            geocodingService: StubLocationGeocodingService(
+                result: .success(GeocodedCoordinate(latitude: 52.52, longitude: 13.405))
+            )
+        )
+
+        await viewModel.fillCoordinatesFromLocationName()
+
+        #expect(viewModel.latitudeText == "52.52")
+        #expect(viewModel.longitudeText == "13.405")
+        #expect(viewModel.errorMessage == nil)
+    }
+
+    @Test @MainActor func stopDetailGeocodingShowsNotFoundError() async {
+        let stop = Stop(title: "Hotel", locationName: "Unknown")
+        let viewModel = StopDetailViewModel(
+            stop: stop,
+            geocodingService: StubLocationGeocodingService(result: .failure(LocationGeocodingError.notFound))
+        )
+
+        await viewModel.fillCoordinatesFromLocationName()
+
+        #expect(viewModel.latitudeText.isEmpty)
+        #expect(viewModel.longitudeText.isEmpty)
+        #expect(viewModel.errorMessage == "Fuer diesen Ort wurden keine Koordinaten gefunden.")
+    }
+
     private func testCalendar() -> Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
@@ -370,5 +417,13 @@ struct TripFlowTests {
             hour: hour,
             minute: minute
         ).date ?? Date()
+    }
+}
+
+private struct StubLocationGeocodingService: LocationGeocoding {
+    let result: Result<GeocodedCoordinate, Error>
+
+    func coordinate(for query: String) async throws -> GeocodedCoordinate {
+        try result.get()
     }
 }

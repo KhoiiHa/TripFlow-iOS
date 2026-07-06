@@ -16,14 +16,20 @@ final class StopDetailViewModel {
     var scheduledDate: Date?
     var hasScheduledDate: Bool
     var errorMessage: String?
+    var isResolvingCoordinates = false
 
     var canSave: Bool {
         title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
 
     private let stopService: StopService
+    private let geocodingService: any LocationGeocoding
 
-    init(stop: Stop, stopService: StopService = StopService()) {
+    init(
+        stop: Stop,
+        stopService: StopService = StopService(),
+        geocodingService: any LocationGeocoding = LocationGeocodingService()
+    ) {
         title = stop.title
         locationName = stop.locationName
         latitudeText = Self.coordinateText(stop.latitude)
@@ -31,6 +37,7 @@ final class StopDetailViewModel {
         scheduledDate = stop.scheduledDate
         hasScheduledDate = stop.scheduledDate != nil
         self.stopService = stopService
+        self.geocodingService = geocodingService
     }
 
     func setScheduledDateEnabled(_ isEnabled: Bool) {
@@ -63,11 +70,31 @@ final class StopDetailViewModel {
         }
     }
 
+    func fillCoordinatesFromLocationName() async {
+        isResolvingCoordinates = true
+        defer { isResolvingCoordinates = false }
+
+        do {
+            let coordinate = try await geocodingService.coordinate(for: locationName)
+            latitudeText = Self.coordinateText(coordinate.latitude)
+            longitudeText = Self.coordinateText(coordinate.longitude)
+            errorMessage = nil
+        } catch LocationGeocodingError.emptyQuery {
+            errorMessage = "Bitte gib zuerst einen Ort ein."
+        } catch {
+            errorMessage = "Fuer diesen Ort wurden keine Koordinaten gefunden."
+        }
+    }
+
     private static func coordinateText(_ coordinate: Double?) -> String {
         guard let coordinate else {
             return ""
         }
 
         return String(coordinate)
+    }
+
+    private static func coordinateText(_ coordinate: Double) -> String {
+        String(coordinate)
     }
 }

@@ -6,8 +6,10 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct TripDetailView: View {
+    @Environment(\.modelContext) private var modelContext
     private let trip: Trip
     @State private var viewModel: TripDetailViewModel
 
@@ -55,15 +57,52 @@ struct TripDetailView: View {
                     .font(.footnote)
                     .foregroundStyle(.red)
             }
+
+            Section("Stops") {
+                let stops = viewModel.sortedStops(for: trip)
+
+                if stops.isEmpty {
+                    Text("Noch keine Stops")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(stops) { stop in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(stop.title)
+                                .font(.headline)
+
+                            if stop.locationName.isEmpty == false {
+                                Text(stop.locationName)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .onDelete { offsets in
+                        viewModel.deleteStops(stops, at: offsets, from: trip, in: modelContext)
+                    }
+                }
+            }
         }
         .navigationTitle(trip.title)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    viewModel.showCreateStop()
+                } label: {
+                    Label("Stop erstellen", systemImage: "plus")
+                }
+            }
+
             ToolbarItem(placement: .confirmationAction) {
                 Button("Speichern") {
                     viewModel.save(trip: trip)
                 }
                 .disabled(viewModel.canSave == false)
             }
+        }
+        .sheet(isPresented: $viewModel.isShowingCreateStop) {
+            createStopSheet
         }
     }
 
@@ -82,10 +121,45 @@ struct TripDetailView: View {
             viewModel.endDate = newValue
         }
     }
+
+    private var createStopSheet: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Stop-Name", text: $viewModel.newStopTitle)
+                    TextField("Ort optional", text: $viewModel.newStopLocationName)
+                }
+
+                if let stopErrorMessage = viewModel.stopErrorMessage {
+                    Text(stopErrorMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
+            }
+            .navigationTitle("Neuer Stop")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Abbrechen") {
+                        viewModel.isShowingCreateStop = false
+                        viewModel.stopErrorMessage = nil
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Erstellen") {
+                        viewModel.createStop(for: trip, in: modelContext)
+                    }
+                    .disabled(viewModel.canCreateStop == false)
+                }
+            }
+            .presentationDetents([.medium])
+        }
+    }
 }
 
 #Preview {
     NavigationStack {
         TripDetailView(trip: Trip(title: "Berlin"))
     }
+    .modelContainer(for: [Trip.self, Stop.self], inMemory: true)
 }

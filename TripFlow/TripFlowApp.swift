@@ -13,6 +13,7 @@ struct TripFlowApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Trip.self,
+            Stop.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

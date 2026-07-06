@@ -11,6 +11,7 @@ import Testing
 
 struct TripFlowTests {
     private let tripService = TripService()
+    private let stopService = StopService()
 
     @Test func createTripTrimsTitle() throws {
         let trip = try tripService.createTrip(title: "  Berlin 2026  ")
@@ -63,5 +64,39 @@ struct TripFlowTests {
                 endDate: endDate
             )
         }
+    }
+
+    @Test func createStopTrimsTitleAndLocation() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+
+        let stop = try stopService.createStop(
+            title: "  Hotel  ",
+            locationName: "  Mitte  ",
+            for: trip
+        )
+
+        #expect(stop.title == "Hotel")
+        #expect(stop.locationName == "Mitte")
+        #expect(stop.orderIndex == 0)
+        #expect(stop.trip === trip)
+        #expect(trip.stops.contains { $0 === stop })
+    }
+
+    @Test func createStopRejectsEmptyTitle() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+
+        #expect(throws: StopValidationError.emptyTitle) {
+            try stopService.createStop(title: "   ", locationName: "Airport", for: trip)
+        }
+    }
+
+    @Test func createStopKeepsInsertionOrder() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+
+        let firstStop = try stopService.createStop(title: "Hotel", locationName: "", for: trip)
+        let secondStop = try stopService.createStop(title: "Museum", locationName: "", for: trip)
+
+        #expect(firstStop.orderIndex == 0)
+        #expect(secondStop.orderIndex == 1)
     }
 }

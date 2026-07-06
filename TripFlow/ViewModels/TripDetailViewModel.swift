@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftData
 
 @Observable
 final class TripDetailViewModel {
@@ -15,20 +16,34 @@ final class TripDetailViewModel {
     var hasStartDate: Bool
     var hasEndDate: Bool
     var errorMessage: String?
+    var newStopTitle = ""
+    var newStopLocationName = ""
+    var isShowingCreateStop = false
+    var stopErrorMessage: String?
 
     var canSave: Bool {
         title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
 
-    private let tripService: TripService
+    var canCreateStop: Bool {
+        newStopTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
 
-    init(trip: Trip, tripService: TripService = TripService()) {
+    private let tripService: TripService
+    private let stopService: StopService
+
+    init(
+        trip: Trip,
+        tripService: TripService = TripService(),
+        stopService: StopService = StopService()
+    ) {
         title = trip.title
         startDate = trip.startDate
         endDate = trip.endDate
         hasStartDate = trip.startDate != nil
         hasEndDate = trip.endDate != nil
         self.tripService = tripService
+        self.stopService = stopService
     }
 
     func setStartDateEnabled(_ isEnabled: Bool) {
@@ -57,5 +72,45 @@ final class TripDetailViewModel {
         } catch {
             errorMessage = "Der Trip konnte nicht gespeichert werden."
         }
+    }
+
+    func sortedStops(for trip: Trip) -> [Stop] {
+        trip.stops.sorted { first, second in
+            first.orderIndex < second.orderIndex
+        }
+    }
+
+    func showCreateStop() {
+        newStopTitle = ""
+        newStopLocationName = ""
+        stopErrorMessage = nil
+        isShowingCreateStop = true
+    }
+
+    func createStop(for trip: Trip, in modelContext: ModelContext) {
+        do {
+            let stop = try stopService.createStop(
+                title: newStopTitle,
+                locationName: newStopLocationName,
+                for: trip
+            )
+            modelContext.insert(stop)
+            newStopTitle = ""
+            newStopLocationName = ""
+            stopErrorMessage = nil
+            isShowingCreateStop = false
+        } catch StopValidationError.emptyTitle {
+            stopErrorMessage = "Bitte gib einen Namen fuer den Stop ein."
+        } catch {
+            stopErrorMessage = "Der Stop konnte nicht erstellt werden."
+        }
+    }
+
+    func deleteStops(_ stops: [Stop], at offsets: IndexSet, from trip: Trip, in modelContext: ModelContext) {
+        for index in offsets {
+            modelContext.delete(stops[index])
+        }
+
+        trip.updatedAt = Date()
     }
 }

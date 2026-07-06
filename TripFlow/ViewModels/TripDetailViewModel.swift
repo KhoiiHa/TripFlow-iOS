@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import MapKit
 import SwiftData
 
 @Observable
@@ -34,12 +35,14 @@ final class TripDetailViewModel {
     private let tripService: TripService
     private let stopService: StopService
     private let timelineService: TimelineService
+    private let mapService: MapService
 
     init(
         trip: Trip,
         tripService: TripService = TripService(),
         stopService: StopService = StopService(),
-        timelineService: TimelineService = TimelineService()
+        timelineService: TimelineService = TimelineService(),
+        mapService: MapService = MapService()
     ) {
         title = trip.title
         startDate = trip.startDate
@@ -49,6 +52,7 @@ final class TripDetailViewModel {
         self.tripService = tripService
         self.stopService = stopService
         self.timelineService = timelineService
+        self.mapService = mapService
     }
 
     func setStartDateEnabled(_ isEnabled: Bool) {
@@ -107,6 +111,14 @@ final class TripDetailViewModel {
 
     func timelineTimeTitle(for stop: Stop) -> String? {
         stop.scheduledDate?.formatted(.dateTime.hour().minute())
+    }
+
+    func mapStops(for trip: Trip) -> [MapStop] {
+        mapService.mapStops(for: trip)
+    }
+
+    func mapRegion(for mapStops: [MapStop]) -> MKCoordinateRegion {
+        mapService.region(for: mapStops)
     }
 
     func showCreateStop() {

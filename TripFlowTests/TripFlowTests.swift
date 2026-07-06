@@ -268,6 +268,20 @@ struct TripFlowTests {
         #expect(mapStops.map(\.title) == ["Hotel"])
     }
 
+    @Test func mapRegionCoversMapStops() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        _ = try stopService.createStop(title: "Hotel", locationName: "", latitude: 52.52, longitude: 13.405, for: trip)
+        _ = try stopService.createStop(title: "Museum", locationName: "", latitude: 52.50, longitude: 13.35, for: trip)
+        let mapStops = mapService.mapStops(for: trip)
+
+        let region = mapService.region(for: mapStops)
+
+        #expect(abs(region.center.latitude - 52.51) < 0.000001)
+        #expect(abs(region.center.longitude - 13.3775) < 0.000001)
+        #expect(region.span.latitudeDelta >= 0.05)
+        #expect(region.span.longitudeDelta >= 0.05)
+    }
+
     private func testCalendar() -> Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt

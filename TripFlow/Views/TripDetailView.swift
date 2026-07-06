@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import MapKit
 
 struct TripDetailView: View {
     @Environment(\.modelContext) private var modelContext
@@ -59,6 +60,7 @@ struct TripDetailView: View {
             }
 
             timelineSection
+            mapSection
 
             Section("Stops") {
                 let stops = viewModel.sortedStops(for: trip)
@@ -132,6 +134,39 @@ struct TripDetailView: View {
                         }
                     }
                     .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
+    private var mapSection: some View {
+        Section("Karte") {
+            let mapStops = viewModel.mapStops(for: trip)
+
+            if mapStops.isEmpty {
+                Text("Noch keine Orte mit Koordinaten")
+                    .foregroundStyle(.secondary)
+            } else {
+                Map(initialPosition: .region(viewModel.mapRegion(for: mapStops))) {
+                    ForEach(mapStops) { mapStop in
+                        Marker(mapStop.title, coordinate: mapStop.coordinate)
+                    }
+                }
+                .frame(height: 220)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                ForEach(mapStops) { mapStop in
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(mapStop.title)
+                            .font(.subheadline)
+
+                        if mapStop.locationName.isEmpty == false {
+                            Text(mapStop.locationName)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 2)
                 }
             }
         }

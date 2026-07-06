@@ -12,6 +12,7 @@ import Testing
 struct TripFlowTests {
     private let tripService = TripService()
     private let stopService = StopService()
+    private let timelineService = TimelineService()
 
     @Test func createTripTrimsTitle() throws {
         let trip = try tripService.createTrip(title: "  Berlin 2026  ")
@@ -138,5 +139,77 @@ struct TripFlowTests {
         #expect(throws: StopValidationError.emptyTitle) {
             try stopService.updateStop(stop, title: "   ", locationName: "", scheduledDate: nil)
         }
+    }
+
+    @Test func timelineGroupsScheduledStopsByDay() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let calendar = testCalendar()
+        let firstDayMorning = makeDate(year: 2026, month: 7, day: 6, hour: 9, minute: 0, calendar: calendar)
+        let firstDayEvening = makeDate(year: 2026, month: 7, day: 6, hour: 18, minute: 0, calendar: calendar)
+        let secondDay = makeDate(year: 2026, month: 7, day: 7, hour: 10, minute: 0, calendar: calendar)
+
+        let hotel = try stopService.createStop(title: "Hotel", locationName: "", scheduledDate: firstDayMorning, for: trip)
+        let dinner = try stopService.createStop(title: "Dinner", locationName: "", scheduledDate: firstDayEvening, for: trip)
+        let museum = try stopService.createStop(title: "Museum", locationName: "", scheduledDate: secondDay, for: trip)
+
+        let timeline = timelineService.makeTimeline(for: trip, calendar: calendar)
+
+        #expect(timeline.days.count == 2)
+        #expect(timeline.days[0].date == calendar.startOfDay(for: firstDayMorning))
+        #expect(timeline.days[0].stops.map(\.title) == [hotel.title, dinner.title])
+        #expect(timeline.days[1].date == calendar.startOfDay(for: secondDay))
+        #expect(timeline.days[1].stops.map(\.title) == [museum.title])
+    }
+
+    @Test func timelineSortsScheduledStopsBeforeUnscheduledStops() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let calendar = testCalendar()
+        let morning = makeDate(year: 2026, month: 7, day: 6, hour: 9, minute: 0, calendar: calendar)
+        let evening = makeDate(year: 2026, month: 7, day: 6, hour: 18, minute: 0, calendar: calendar)
+
+        let unscheduled = try stopService.createStop(title: "Packen", locationName: "", for: trip)
+        let dinner = try stopService.createStop(title: "Dinner", locationName: "", scheduledDate: evening, for: trip)
+        let hotel = try stopService.createStop(title: "Hotel", locationName: "", scheduledDate: morning, for: trip)
+
+        let sortedStops = timelineService.sortedStops(for: trip, calendar: calendar)
+
+        #expect(sortedStops.map(\.title) == [hotel.title, dinner.title, unscheduled.title])
+    }
+
+    @Test func timelineKeepsInsertionOrderForUnscheduledStops() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+
+        let hotel = try stopService.createStop(title: "Hotel", locationName: "", for: trip)
+        let museum = try stopService.createStop(title: "Museum", locationName: "", for: trip)
+
+        let timeline = timelineService.makeTimeline(for: trip, calendar: testCalendar())
+
+        #expect(timeline.days.isEmpty)
+        #expect(timeline.unscheduledStops.map(\.title) == [hotel.title, museum.title])
+    }
+
+    private func testCalendar() -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+        return calendar
+    }
+
+    private func makeDate(
+        year: Int,
+        month: Int,
+        day: Int,
+        hour: Int,
+        minute: Int,
+        calendar: Calendar
+    ) -> Date {
+        DateComponents(
+            calendar: calendar,
+            timeZone: calendar.timeZone,
+            year: year,
+            month: month,
+            day: day,
+            hour: hour,
+            minute: minute
+        ).date ?? Date()
     }
 }

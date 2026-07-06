@@ -31,11 +31,13 @@ final class TripDetailViewModel {
 
     private let tripService: TripService
     private let stopService: StopService
+    private let timelineService: TimelineService
 
     init(
         trip: Trip,
         tripService: TripService = TripService(),
-        stopService: StopService = StopService()
+        stopService: StopService = StopService(),
+        timelineService: TimelineService = TimelineService()
     ) {
         title = trip.title
         startDate = trip.startDate
@@ -44,6 +46,7 @@ final class TripDetailViewModel {
         hasEndDate = trip.endDate != nil
         self.tripService = tripService
         self.stopService = stopService
+        self.timelineService = timelineService
     }
 
     func setStartDateEnabled(_ isEnabled: Bool) {
@@ -75,21 +78,7 @@ final class TripDetailViewModel {
     }
 
     func sortedStops(for trip: Trip) -> [Stop] {
-        trip.stops.sorted { first, second in
-            if let firstDate = first.scheduledDate, let secondDate = second.scheduledDate {
-                return firstDate < secondDate
-            }
-
-            if first.scheduledDate != nil {
-                return true
-            }
-
-            if second.scheduledDate != nil {
-                return false
-            }
-
-            return first.orderIndex < second.orderIndex
-        }
+        timelineService.sortedStops(for: trip)
     }
 
     func stopSubtitle(for stop: Stop) -> String? {

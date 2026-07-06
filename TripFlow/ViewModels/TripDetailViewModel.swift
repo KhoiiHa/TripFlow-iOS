@@ -81,6 +81,10 @@ final class TripDetailViewModel {
         timelineService.sortedStops(for: trip)
     }
 
+    func timeline(for trip: Trip) -> Timeline {
+        timelineService.makeTimeline(for: trip)
+    }
+
     func stopSubtitle(for stop: Stop) -> String? {
         var details: [String] = []
 
@@ -93,6 +97,14 @@ final class TripDetailViewModel {
         }
 
         return details.isEmpty ? nil : details.joined(separator: " - ")
+    }
+
+    func timelineDayTitle(for day: TimelineDay) -> String {
+        day.date.formatted(.dateTime.weekday(.wide).day().month().year())
+    }
+
+    func timelineTimeTitle(for stop: Stop) -> String? {
+        stop.scheduledDate?.formatted(.dateTime.hour().minute())
     }
 
     func showCreateStop() {

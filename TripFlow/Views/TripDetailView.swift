@@ -58,6 +58,8 @@ struct TripDetailView: View {
                     .foregroundStyle(.red)
             }
 
+            timelineSection
+
             Section("Stops") {
                 let stops = viewModel.sortedStops(for: trip)
 
@@ -66,21 +68,7 @@ struct TripDetailView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(stops) { stop in
-                        NavigationLink {
-                            StopDetailView(stop: stop)
-                        } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(stop.title)
-                                    .font(.headline)
-
-                                if let subtitle = viewModel.stopSubtitle(for: stop) {
-                                    Text(subtitle)
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            .padding(.vertical, 4)
-                        }
+                        stopRow(stop)
                     }
                     .onDelete { offsets in
                         viewModel.deleteStops(stops, at: offsets, from: trip, in: modelContext)
@@ -107,6 +95,88 @@ struct TripDetailView: View {
         }
         .sheet(isPresented: $viewModel.isShowingCreateStop) {
             createStopSheet
+        }
+    }
+
+    private var timelineSection: some View {
+        Section("Timeline") {
+            let timeline = viewModel.timeline(for: trip)
+
+            if timeline.days.isEmpty && timeline.unscheduledStops.isEmpty {
+                Text("Noch keine Timeline")
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(timeline.days) { day in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(viewModel.timelineDayTitle(for: day))
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+
+                        ForEach(day.stops) { stop in
+                            timelineStopRow(stop)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                if timeline.unscheduledStops.isEmpty == false {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Ohne Datum")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+
+                        ForEach(timeline.unscheduledStops) { stop in
+                            timelineStopRow(stop)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
+    private func timelineStopRow(_ stop: Stop) -> some View {
+        NavigationLink {
+            StopDetailView(stop: stop)
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(viewModel.timelineTimeTitle(for: stop) ?? "--:--")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 48, alignment: .leading)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(stop.title)
+                        .font(.body)
+
+                    if stop.locationName.isEmpty == false {
+                        Text(stop.locationName)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    private func stopRow(_ stop: Stop) -> some View {
+        NavigationLink {
+            StopDetailView(stop: stop)
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(stop.title)
+                    .font(.headline)
+
+                if let subtitle = viewModel.stopSubtitle(for: stop) {
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.vertical, 4)
         }
     }
 

@@ -95,5 +95,5 @@ struct TripListView: View {
 
 #Preview {
     TripListView()
-        .modelContainer(for: [Trip.self, Stop.self], inMemory: true)
+        .modelContainer(for: [Trip.self, Stop.self, TravelDocument.self], inMemory: true)
 }

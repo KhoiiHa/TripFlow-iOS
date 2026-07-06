@@ -17,6 +17,8 @@ final class Trip {
     var updatedAt: Date
     @Relationship(deleteRule: .cascade, inverse: \Stop.trip)
     var stops: [Stop]
+    @Relationship(deleteRule: .cascade, inverse: \TravelDocument.trip)
+    var documents: [TravelDocument]
 
     init(
         title: String,
@@ -24,7 +26,8 @@ final class Trip {
         endDate: Date? = nil,
         createdAt: Date = Date(),
         updatedAt: Date = Date(),
-        stops: [Stop] = []
+        stops: [Stop] = [],
+        documents: [TravelDocument] = []
     ) {
         self.title = title
         self.startDate = startDate
@@ -32,5 +35,6 @@ final class Trip {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.stops = stops
+        self.documents = documents
     }
 }

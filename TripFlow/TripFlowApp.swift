@@ -14,6 +14,7 @@ struct TripFlowApp: App {
         let schema = Schema([
             Trip.self,
             Stop.self,
+            TravelDocument.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

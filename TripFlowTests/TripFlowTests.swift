@@ -15,6 +15,7 @@ struct TripFlowTests {
     private let stopService = StopService()
     private let timelineService = TimelineService()
     private let mapService = MapService()
+    private let travelDocumentService = TravelDocumentService()
 
     @Test func createTripTrimsTitle() throws {
         let trip = try tripService.createTrip(title: "  Berlin 2026  ")
@@ -67,6 +68,60 @@ struct TripFlowTests {
                 endDate: endDate
             )
         }
+    }
+
+    @Test func createTravelDocumentTrimsValuesAndAssignsTrip() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+
+        let document = try travelDocumentService.createDocument(
+            title: "  Hotel Booking  ",
+            documentType: "  Hotel  ",
+            fileName: "  booking.pdf  ",
+            extractedText: "  Check-in 15:00  ",
+            for: trip
+        )
+
+        #expect(document.title == "Hotel Booking")
+        #expect(document.documentType == "Hotel")
+        #expect(document.fileName == "booking.pdf")
+        #expect(document.extractedText == "Check-in 15:00")
+        #expect(document.trip === trip)
+        #expect(trip.documents.contains { $0 === document })
+    }
+
+    @Test func createTravelDocumentRejectsEmptyTitle() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+
+        #expect(throws: TravelDocumentValidationError.emptyTitle) {
+            try travelDocumentService.createDocument(title: "   ", for: trip)
+        }
+    }
+
+    @Test func updateTravelDocumentAppliesValidatedValues() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(title: "Ticket", for: trip)
+
+        try travelDocumentService.updateDocument(
+            document,
+            title: "  Train Ticket  ",
+            documentType: "  Ticket  ",
+            fileName: "  train.pdf  ",
+            extractedText: "  ICE 100  "
+        )
+
+        #expect(document.title == "Train Ticket")
+        #expect(document.documentType == "Ticket")
+        #expect(document.fileName == "train.pdf")
+        #expect(document.extractedText == "ICE 100")
+    }
+
+    @Test func applyExtractedTextTrimsText() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(title: "Ticket", for: trip)
+
+        travelDocumentService.applyExtractedText("  Gate A12  ", to: document)
+
+        #expect(document.extractedText == "Gate A12")
     }
 
     @Test func createStopTrimsTitleAndLocation() throws {

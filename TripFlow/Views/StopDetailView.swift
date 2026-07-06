@@ -85,5 +85,5 @@ struct StopDetailView: View {
     NavigationStack {
         StopDetailView(stop: Stop(title: "Hotel", locationName: "Mitte"))
     }
-    .modelContainer(for: [Trip.self, Stop.self], inMemory: true)
+    .modelContainer(for: [Trip.self, Stop.self, TravelDocument.self], inMemory: true)
 }

@@ -309,5 +309,5 @@ struct TripDetailView: View {
     NavigationStack {
         TripDetailView(trip: Trip(title: "Berlin"))
     }
-    .modelContainer(for: [Trip.self, Stop.self], inMemory: true)
+    .modelContainer(for: [Trip.self, Stop.self, TravelDocument.self], inMemory: true)
 }

@@ -336,7 +336,10 @@ struct TripDetailView: View {
                             await viewModel.fillNewStopCoordinatesFromLocationName()
                         }
                     } label: {
-                        Label("Aus Ort setzen", systemImage: "location")
+                        Label(
+                            viewModel.isReviewingDocumentStopSuggestion ? "Koordinaten aus erkanntem Ort setzen" : "Koordinaten aus Ort setzen",
+                            systemImage: "location"
+                        )
                     }
                     .disabled(viewModel.newStopLocationName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isResolvingNewStopCoordinates)
                 }

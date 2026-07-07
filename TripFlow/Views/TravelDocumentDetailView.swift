@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 
 struct TravelDocumentDetailView: View {
+    @Environment(\.modelContext) private var modelContext
     private let document: TravelDocument
     @State private var viewModel: TravelDocumentDetailViewModel
 
@@ -43,6 +44,14 @@ struct TravelDocumentDetailView: View {
                     if let suggestedLocationName = viewModel.parsedSuggestedLocationName() {
                         LabeledContent("Ort", value: suggestedLocationName)
                     }
+
+                    if viewModel.canShowStopSuggestionAction(for: document) {
+                        Button {
+                            viewModel.showStopSuggestion(from: document)
+                        } label: {
+                            Label("Stop daraus erstellen", systemImage: "calendar.badge.plus")
+                        }
+                    }
                 }
             }
 
@@ -60,6 +69,55 @@ struct TravelDocumentDetailView: View {
                 }
                 .disabled(viewModel.canSave == false)
             }
+        }
+        .sheet(isPresented: $viewModel.isShowingStopSuggestion) {
+            stopSuggestionSheet
+        }
+    }
+
+    private var stopSuggestionSheet: some View {
+        NavigationStack {
+            Form {
+                Section("Vorschlag prüfen") {
+                    TextField("Stop-Name", text: $viewModel.stopSuggestionTitle)
+                    TextField("Ort optional", text: $viewModel.stopSuggestionLocationName)
+                    DatePicker(
+                        "Datum und Uhrzeit",
+                        selection: stopSuggestionScheduledDateBinding,
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+                }
+
+                if let stopSuggestionErrorMessage = viewModel.stopSuggestionErrorMessage {
+                    Text(stopSuggestionErrorMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
+            }
+            .navigationTitle("Neuer Stop")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Abbrechen") {
+                        viewModel.isShowingStopSuggestion = false
+                        viewModel.stopSuggestionErrorMessage = nil
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Erstellen") {
+                        viewModel.createStopSuggestion(from: document, in: modelContext)
+                    }
+                    .disabled(viewModel.canCreateStopSuggestion == false)
+                }
+            }
+        }
+    }
+
+    private var stopSuggestionScheduledDateBinding: Binding<Date> {
+        Binding {
+            viewModel.stopSuggestionScheduledDate ?? Date()
+        } set: { newValue in
+            viewModel.stopSuggestionScheduledDate = newValue
         }
     }
 }

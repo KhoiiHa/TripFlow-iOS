@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftData
 
 @Observable
 final class TravelDocumentDetailViewModel {
@@ -14,18 +15,30 @@ final class TravelDocumentDetailViewModel {
     var fileName: String
     var extractedText: String
     var errorMessage: String?
+    var isShowingStopSuggestion = false
+    var stopSuggestionTitle = ""
+    var stopSuggestionLocationName = ""
+    var stopSuggestionScheduledDate: Date?
+    var stopSuggestionErrorMessage: String?
 
     var canSave: Bool {
         title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
 
+    var canCreateStopSuggestion: Bool {
+        stopSuggestionTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            && stopSuggestionScheduledDate != nil
+    }
+
     private let travelDocumentService: TravelDocumentService
     private let travelDocumentParserService: TravelDocumentParserService
+    private let stopService: StopService
 
     init(
         document: TravelDocument,
         travelDocumentService: TravelDocumentService = TravelDocumentService(),
-        travelDocumentParserService: TravelDocumentParserService = TravelDocumentParserService()
+        travelDocumentParserService: TravelDocumentParserService = TravelDocumentParserService(),
+        stopService: StopService = StopService()
     ) {
         title = document.title
         documentType = document.documentType
@@ -33,6 +46,7 @@ final class TravelDocumentDetailViewModel {
         extractedText = document.extractedText
         self.travelDocumentService = travelDocumentService
         self.travelDocumentParserService = travelDocumentParserService
+        self.stopService = stopService
     }
 
     func parsedTravelDocumentResult(calendar: Calendar = .current) -> TravelDocumentParseResult {
@@ -67,6 +81,51 @@ final class TravelDocumentDetailViewModel {
 
     func parsedSuggestedLocationName(calendar: Calendar = .current) -> String? {
         parsedTravelDocumentResult(calendar: calendar).suggestedLocationName
+    }
+
+    func canShowStopSuggestionAction(for document: TravelDocument, calendar: Calendar = .current) -> Bool {
+        document.trip != nil && parsedTravelDocumentResult(calendar: calendar).scheduledDate != nil
+    }
+
+    func showStopSuggestion(from document: TravelDocument, calendar: Calendar = .current) {
+        let result = parsedTravelDocumentResult(calendar: calendar)
+
+        stopSuggestionTitle = result.suggestedStopTitle ?? title
+        stopSuggestionLocationName = result.suggestedLocationName ?? ""
+        stopSuggestionScheduledDate = result.scheduledDate
+        stopSuggestionErrorMessage = nil
+        isShowingStopSuggestion = true
+    }
+
+    func createStopSuggestion(from document: TravelDocument, in modelContext: ModelContext) {
+        guard let trip = document.trip else {
+            stopSuggestionErrorMessage = "Der Stop konnte keinem Trip zugeordnet werden."
+            return
+        }
+
+        guard let scheduledDate = stopSuggestionScheduledDate else {
+            stopSuggestionErrorMessage = "Bitte pruefe Datum und Uhrzeit fuer den vorgeschlagenen Stop."
+            return
+        }
+
+        do {
+            let stop = try stopService.createStop(
+                title: stopSuggestionTitle,
+                locationName: stopSuggestionLocationName,
+                scheduledDate: scheduledDate,
+                for: trip
+            )
+            modelContext.insert(stop)
+            stopSuggestionTitle = ""
+            stopSuggestionLocationName = ""
+            stopSuggestionScheduledDate = nil
+            stopSuggestionErrorMessage = nil
+            isShowingStopSuggestion = false
+        } catch StopValidationError.emptyTitle {
+            stopSuggestionErrorMessage = "Bitte gib einen Namen fuer den Stop ein."
+        } catch {
+            stopSuggestionErrorMessage = "Der Stop konnte nicht erstellt werden."
+        }
     }
 
     func save(document: TravelDocument) {

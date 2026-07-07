@@ -366,6 +366,49 @@ struct TripFlowTests {
         #expect(viewModel.parsedSuggestedLocationName(calendar: testCalendar()) == "Alexanderplatz 1, Berlin")
     }
 
+    @Test func documentDetailPreparesStopSuggestionFromParsedData() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Importierte Unterlage",
+            extractedText: """
+            Check-in 15.07.2026 ab 14:30 Uhr
+            Adresse: Alexanderplatz 1, Berlin
+            """,
+            for: trip
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        viewModel.showStopSuggestion(from: document, calendar: testCalendar())
+
+        #expect(viewModel.isShowingStopSuggestion)
+        #expect(viewModel.stopSuggestionTitle == "Hotel Check-in")
+        #expect(viewModel.stopSuggestionLocationName == "Alexanderplatz 1, Berlin")
+        #expect(viewModel.stopSuggestionScheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: testCalendar()))
+        #expect(viewModel.canCreateStopSuggestion)
+    }
+
+    @Test @MainActor func documentDetailCreatesStopSuggestionForTrip() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Importierte Unterlage",
+            extractedText: "Check-in 15.07.2026 ab 14:30 Uhr",
+            for: trip
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+        let modelContext = try makeModelContext()
+        modelContext.insert(trip)
+        modelContext.insert(document)
+        viewModel.showStopSuggestion(from: document, calendar: testCalendar())
+
+        viewModel.createStopSuggestion(from: document, in: modelContext)
+
+        #expect(trip.stops.count == 1)
+        #expect(trip.stops.first?.title == "Hotel Check-in")
+        #expect(trip.stops.first?.scheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: testCalendar()))
+        #expect(viewModel.isShowingStopSuggestion == false)
+        #expect(viewModel.stopSuggestionErrorMessage == nil)
+    }
+
     @Test func documentDetailDoesNotShowScheduleForUnparsedText() {
         let document = TravelDocument(
             title: "Hotel",

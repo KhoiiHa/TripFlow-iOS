@@ -119,6 +119,30 @@ final class TripDetailViewModel {
         stop.scheduledDate?.formatted(.dateTime.hour().minute())
     }
 
+    func sortedDocuments(for trip: Trip) -> [TravelDocument] {
+        trip.documents.sorted {
+            if $0.createdAt == $1.createdAt {
+                return $0.title.localizedStandardCompare($1.title) == .orderedAscending
+            }
+
+            return $0.createdAt > $1.createdAt
+        }
+    }
+
+    func documentSubtitle(for document: TravelDocument) -> String? {
+        var details: [String] = []
+
+        if document.documentType.isEmpty == false {
+            details.append(document.documentType)
+        }
+
+        if document.fileName.isEmpty == false {
+            details.append(document.fileName)
+        }
+
+        return details.isEmpty ? nil : details.joined(separator: " - ")
+    }
+
     func mapStops(for trip: Trip) -> [MapStop] {
         mapService.mapStops(for: trip)
     }

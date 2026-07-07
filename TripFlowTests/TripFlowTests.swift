@@ -124,6 +124,39 @@ struct TripFlowTests {
         #expect(document.extractedText == "Gate A12")
     }
 
+    @Test func tripDetailSortsDocumentsNewestFirst() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let olderDocument = TravelDocument(
+            title: "Hotel",
+            createdAt: Date(timeIntervalSince1970: 1),
+            trip: trip
+        )
+        let newerDocument = TravelDocument(
+            title: "Ticket",
+            createdAt: Date(timeIntervalSince1970: 2),
+            trip: trip
+        )
+        trip.documents = [olderDocument, newerDocument]
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        let documents = viewModel.sortedDocuments(for: trip)
+
+        #expect(documents.map(\.title) == ["Ticket", "Hotel"])
+    }
+
+    @Test func tripDetailDocumentSubtitleUsesTypeAndFileName() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Hotel",
+            documentType: "Booking",
+            fileName: "hotel.pdf",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        #expect(viewModel.documentSubtitle(for: document) == "Booking - hotel.pdf")
+    }
+
     @Test func createStopTrimsTitleAndLocation() throws {
         let trip = try tripService.createTrip(title: "Berlin")
 

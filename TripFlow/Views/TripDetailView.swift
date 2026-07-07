@@ -61,6 +61,7 @@ struct TripDetailView: View {
 
             timelineSection
             mapSection
+            documentsSection
 
             Section("Stops") {
                 let stops = viewModel.sortedStops(for: trip)
@@ -172,6 +173,21 @@ struct TripDetailView: View {
         }
     }
 
+    private var documentsSection: some View {
+        Section("Reiseunterlagen") {
+            let documents = viewModel.sortedDocuments(for: trip)
+
+            if documents.isEmpty {
+                Text("Noch keine Reiseunterlagen")
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(documents) { document in
+                    documentRow(document)
+                }
+            }
+        }
+    }
+
     private func timelineStopRow(_ stop: Stop) -> some View {
         NavigationLink {
             StopDetailView(stop: stop)
@@ -213,6 +229,27 @@ struct TripDetailView: View {
             }
             .padding(.vertical, 4)
         }
+    }
+
+    private func documentRow(_ document: TravelDocument) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(document.title)
+                .font(.headline)
+
+            if let subtitle = viewModel.documentSubtitle(for: document) {
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            if document.extractedText.isEmpty == false {
+                Text(document.extractedText)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     private var startDateBinding: Binding<Date> {
@@ -307,7 +344,17 @@ struct TripDetailView: View {
 
 #Preview {
     NavigationStack {
-        TripDetailView(trip: Trip(title: "Berlin"))
+        let trip = Trip(title: "Berlin")
+        trip.documents = [
+            TravelDocument(
+                title: "Hotelbuchung",
+                documentType: "Hotel",
+                fileName: "hotel.pdf",
+                extractedText: "Check-in 15:00, Reservierung 12345"
+            ),
+        ]
+
+        return TripDetailView(trip: trip)
     }
     .modelContainer(for: [Trip.self, Stop.self, TravelDocument.self], inMemory: true)
 }

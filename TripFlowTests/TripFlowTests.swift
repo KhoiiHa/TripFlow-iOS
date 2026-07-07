@@ -152,6 +152,18 @@ struct TripFlowTests {
         #expect(result.scheduledDate == nil)
     }
 
+    @Test func parserSuggestsHotelStopTitleFromDocumentText() {
+        let result = travelDocumentParserService.parse("Hotel Check-in 15.07.2026 ab 14:30 Uhr")
+
+        #expect(result.suggestedStopTitle == "Hotel Check-in")
+    }
+
+    @Test func parserSuggestsFlightStopTitleFromDocumentText() {
+        let result = travelDocumentParserService.parse("Boarding Gate A12 05/08/26 09:05")
+
+        #expect(result.suggestedStopTitle == "Flug")
+    }
+
     @Test func tripDetailSortsDocumentsNewestFirst() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let olderDocument = TravelDocument(
@@ -188,7 +200,7 @@ struct TripFlowTests {
     @Test func tripDetailPrefillsNewStopFromDocumentSchedule() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let document = try travelDocumentService.createDocument(
-            title: "Hotel Check-in",
+            title: "Importierte Unterlage",
             documentType: "Hotel",
             extractedText: "Check-in 15.07.2026 ab 14:30 Uhr",
             for: trip
@@ -210,7 +222,7 @@ struct TripFlowTests {
         let trip = try tripService.createTrip(title: "Berlin")
         let document = try travelDocumentService.createDocument(
             title: "Hotel",
-            extractedText: "Reservierung ohne Datum",
+            extractedText: "Importierte Unterlage ohne Datum",
             for: trip
         )
         let viewModel = TripDetailViewModel(trip: trip)

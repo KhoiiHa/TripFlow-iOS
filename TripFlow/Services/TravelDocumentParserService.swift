@@ -22,6 +22,7 @@ struct TravelDocumentParseResult: Equatable {
     let date: TravelDocumentParsedDate?
     let time: TravelDocumentParsedTime?
     let scheduledDate: Date?
+    let suggestedStopTitle: String?
 }
 
 struct TravelDocumentParserService {
@@ -29,8 +30,14 @@ struct TravelDocumentParserService {
         let date = parseDate(in: text)
         let time = parseTime(in: text)
         let scheduledDate = makeDate(from: date, time: time, calendar: calendar)
+        let suggestedStopTitle = parseSuggestedStopTitle(in: text)
 
-        return TravelDocumentParseResult(date: date, time: time, scheduledDate: scheduledDate)
+        return TravelDocumentParseResult(
+            date: date,
+            time: time,
+            scheduledDate: scheduledDate,
+            suggestedStopTitle: suggestedStopTitle
+        )
     }
 
     private func parseDate(in text: String) -> TravelDocumentParsedDate? {
@@ -84,5 +91,41 @@ struct TravelDocumentParserService {
             hour: time.hour,
             minute: time.minute
         ).date
+    }
+
+    private func parseSuggestedStopTitle(in text: String) -> String? {
+        let normalizedText = text.folding(
+            options: [.caseInsensitive, .diacriticInsensitive],
+            locale: .current
+        )
+
+        if normalizedText.contains("hotel")
+            || normalizedText.contains("check-in")
+            || normalizedText.contains("checkin")
+            || normalizedText.contains("unterkunft") {
+            return "Hotel Check-in"
+        }
+
+        if normalizedText.contains("flug")
+            || normalizedText.contains("flight")
+            || normalizedText.contains("boarding")
+            || normalizedText.contains("gate") {
+            return "Flug"
+        }
+
+        if normalizedText.contains("bahn")
+            || normalizedText.contains("zug")
+            || normalizedText.contains("train")
+            || normalizedText.contains("ice") {
+            return "Bahnfahrt"
+        }
+
+        if normalizedText.contains("restaurant")
+            || normalizedText.contains("reservierung")
+            || normalizedText.contains("reservation") {
+            return "Reservierung"
+        }
+
+        return nil
     }
 }

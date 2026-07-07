@@ -191,12 +191,13 @@ final class TripDetailViewModel {
 
     func showCreateStop(from document: TravelDocument, calendar: Calendar = .current) {
         showCreateStop()
-        newStopTitle = document.title
+        let parseResult = travelDocumentParserService.parse(document.extractedText, calendar: calendar)
+        newStopTitle = parseResult.suggestedStopTitle ?? document.title
         isReviewingDocumentStopSuggestion = true
         stopSuggestionDocumentType = document.documentType
         stopSuggestionTextExcerpt = Self.textExcerpt(from: document.extractedText)
 
-        if let scheduledDate = parsedScheduleDate(for: document, calendar: calendar) {
+        if let scheduledDate = parseResult.scheduledDate {
             newStopScheduledDate = scheduledDate
             newStopHasScheduledDate = true
         }

@@ -241,24 +241,28 @@ struct TripDetailView: View {
     }
 
     private func documentRow(_ document: TravelDocument) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(document.title)
-                .font(.headline)
+        NavigationLink {
+            TravelDocumentDetailView(document: document)
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(document.title)
+                    .font(.headline)
 
-            if let subtitle = viewModel.documentSubtitle(for: document) {
-                Text(subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
+                if let subtitle = viewModel.documentSubtitle(for: document) {
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
 
-            if document.extractedText.isEmpty == false {
-                Text(document.extractedText)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                if document.extractedText.isEmpty == false {
+                    Text(document.extractedText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
             }
+            .padding(.vertical, 4)
         }
-        .padding(.vertical, 4)
     }
 
     private var startDateBinding: Binding<Date> {

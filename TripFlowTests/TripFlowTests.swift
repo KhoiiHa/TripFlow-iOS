@@ -197,6 +197,50 @@ struct TripFlowTests {
         #expect(viewModel.isShowingCreateDocument)
     }
 
+    @Test func documentDetailInitializesFromDocument() {
+        let document = TravelDocument(
+            title: "Hotelbuchung",
+            documentType: "Hotel",
+            fileName: "hotel.pdf",
+            extractedText: "Check-in 15:00"
+        )
+
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        #expect(viewModel.title == "Hotelbuchung")
+        #expect(viewModel.documentType == "Hotel")
+        #expect(viewModel.fileName == "hotel.pdf")
+        #expect(viewModel.extractedText == "Check-in 15:00")
+    }
+
+    @Test func documentDetailSaveUpdatesDocument() {
+        let document = TravelDocument(title: "Hotel")
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+        viewModel.title = "  Hotelbuchung  "
+        viewModel.documentType = "  Hotel  "
+        viewModel.fileName = "  hotel.pdf  "
+        viewModel.extractedText = "  Check-in 15:00  "
+
+        viewModel.save(document: document)
+
+        #expect(document.title == "Hotelbuchung")
+        #expect(document.documentType == "Hotel")
+        #expect(document.fileName == "hotel.pdf")
+        #expect(document.extractedText == "Check-in 15:00")
+        #expect(viewModel.errorMessage == nil)
+    }
+
+    @Test func documentDetailSaveRejectsEmptyTitle() {
+        let document = TravelDocument(title: "Hotel")
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+        viewModel.title = "   "
+
+        viewModel.save(document: document)
+
+        #expect(document.title == "Hotel")
+        #expect(viewModel.errorMessage == "Bitte gib einen Namen fuer die Reiseunterlage ein.")
+    }
+
     @Test func createStopTrimsTitleAndLocation() throws {
         let trip = try tripService.createTrip(title: "Berlin")
 

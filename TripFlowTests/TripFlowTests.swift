@@ -17,6 +17,7 @@ struct TripFlowTests {
     private let timelineService = TimelineService()
     private let mapService = MapService()
     private let travelDocumentService = TravelDocumentService()
+    private let travelDocumentParserService = TravelDocumentParserService()
 
     @Test func createTripTrimsTitle() throws {
         let trip = try tripService.createTrip(title: "  Berlin 2026  ")
@@ -123,6 +124,32 @@ struct TripFlowTests {
         travelDocumentService.applyExtractedText("  Gate A12  ", to: document)
 
         #expect(document.extractedText == "Gate A12")
+    }
+
+    @Test func parserExtractsDateAndTimeFromTravelDocumentText() {
+        let result = travelDocumentParserService.parse(
+            "Check-in 15.07.2026 ab 14:30 Uhr",
+            calendar: testCalendar()
+        )
+
+        #expect(result.date == TravelDocumentParsedDate(day: 15, month: 7, year: 2026))
+        #expect(result.time == TravelDocumentParsedTime(hour: 14, minute: 30))
+        #expect(result.scheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: testCalendar()))
+    }
+
+    @Test func parserSupportsShortYearAndSlashDate() {
+        let result = travelDocumentParserService.parse("Boarding 05/08/26 09:05")
+
+        #expect(result.date == TravelDocumentParsedDate(day: 5, month: 8, year: 2026))
+        #expect(result.time == TravelDocumentParsedTime(hour: 9, minute: 5))
+    }
+
+    @Test func parserIgnoresInvalidDateAndTimeValues() {
+        let result = travelDocumentParserService.parse("Termin 40.15.2026 25:90")
+
+        #expect(result.date == nil)
+        #expect(result.time == nil)
+        #expect(result.scheduledDate == nil)
     }
 
     @Test func tripDetailSortsDocumentsNewestFirst() throws {

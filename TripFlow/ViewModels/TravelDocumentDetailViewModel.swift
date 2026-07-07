@@ -19,6 +19,8 @@ final class TravelDocumentDetailViewModel {
     var stopSuggestionTitle = ""
     var stopSuggestionLocationName = ""
     var stopSuggestionScheduledDate: Date?
+    var stopSuggestionDocumentType = ""
+    var stopSuggestionTextExcerpt = ""
     var stopSuggestionErrorMessage: String?
 
     var canSave: Bool {
@@ -93,6 +95,8 @@ final class TravelDocumentDetailViewModel {
         stopSuggestionTitle = result.suggestedStopTitle ?? title
         stopSuggestionLocationName = result.suggestedLocationName ?? ""
         stopSuggestionScheduledDate = result.scheduledDate
+        stopSuggestionDocumentType = document.documentType
+        stopSuggestionTextExcerpt = Self.textExcerpt(from: document.extractedText)
         stopSuggestionErrorMessage = nil
         isShowingStopSuggestion = true
     }
@@ -119,6 +123,8 @@ final class TravelDocumentDetailViewModel {
             stopSuggestionTitle = ""
             stopSuggestionLocationName = ""
             stopSuggestionScheduledDate = nil
+            stopSuggestionDocumentType = ""
+            stopSuggestionTextExcerpt = ""
             stopSuggestionErrorMessage = nil
             isShowingStopSuggestion = false
         } catch StopValidationError.emptyTitle {
@@ -143,5 +149,15 @@ final class TravelDocumentDetailViewModel {
         } catch {
             errorMessage = "Die Reiseunterlage konnte nicht gespeichert werden."
         }
+    }
+
+    private static func textExcerpt(from text: String) -> String {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard trimmedText.count > 120 else {
+            return trimmedText
+        }
+
+        return String(trimmedText.prefix(120)) + "..."
     }
 }

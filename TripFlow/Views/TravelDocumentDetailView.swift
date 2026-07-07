@@ -88,6 +88,19 @@ struct TravelDocumentDetailView: View {
                     )
                 }
 
+                if viewModel.stopSuggestionTextExcerpt.isEmpty == false
+                    || viewModel.stopSuggestionDocumentType.isEmpty == false {
+                    Section("Quelle") {
+                        if viewModel.stopSuggestionTextExcerpt.isEmpty == false {
+                            LabeledContent("Textausschnitt", value: viewModel.stopSuggestionTextExcerpt)
+                        }
+
+                        if viewModel.stopSuggestionDocumentType.isEmpty == false {
+                            LabeledContent("Dokumenttyp", value: viewModel.stopSuggestionDocumentType)
+                        }
+                    }
+                }
+
                 if let stopSuggestionErrorMessage = viewModel.stopSuggestionErrorMessage {
                     Text(stopSuggestionErrorMessage)
                         .font(.footnote)

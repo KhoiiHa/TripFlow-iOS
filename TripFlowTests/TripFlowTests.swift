@@ -384,7 +384,26 @@ struct TripFlowTests {
         #expect(viewModel.stopSuggestionTitle == "Hotel Check-in")
         #expect(viewModel.stopSuggestionLocationName == "Alexanderplatz 1, Berlin")
         #expect(viewModel.stopSuggestionScheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: testCalendar()))
+        #expect(viewModel.stopSuggestionDocumentType == "")
+        #expect(viewModel.stopSuggestionTextExcerpt == "Check-in 15.07.2026 ab 14:30 Uhr\nAdresse: Alexanderplatz 1, Berlin")
         #expect(viewModel.canCreateStopSuggestion)
+    }
+
+    @Test func documentDetailLimitsStopSuggestionTextExcerpt() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let longText = String(repeating: "A", count: 130)
+        let document = try travelDocumentService.createDocument(
+            title: "Importierte Unterlage",
+            documentType: "Hotel",
+            extractedText: longText,
+            for: trip
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        viewModel.showStopSuggestion(from: document, calendar: testCalendar())
+
+        #expect(viewModel.stopSuggestionDocumentType == "Hotel")
+        #expect(viewModel.stopSuggestionTextExcerpt == String(repeating: "A", count: 120) + "...")
     }
 
     @Test @MainActor func documentDetailCreatesStopSuggestionForTrip() throws {

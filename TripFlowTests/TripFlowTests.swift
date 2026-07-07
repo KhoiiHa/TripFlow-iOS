@@ -164,6 +164,17 @@ struct TripFlowTests {
         #expect(result.suggestedStopTitle == "Flug")
     }
 
+    @Test func parserSuggestsLocationNameFromLabeledDocumentLine() {
+        let result = travelDocumentParserService.parse(
+            """
+            Hotel Check-in 15.07.2026 ab 14:30 Uhr
+            Adresse: Alexanderplatz 1, Berlin
+            """
+        )
+
+        #expect(result.suggestedLocationName == "Alexanderplatz 1, Berlin")
+    }
+
     @Test func tripDetailSortsDocumentsNewestFirst() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let olderDocument = TravelDocument(
@@ -202,7 +213,10 @@ struct TripFlowTests {
         let document = try travelDocumentService.createDocument(
             title: "Importierte Unterlage",
             documentType: "Hotel",
-            extractedText: "Check-in 15.07.2026 ab 14:30 Uhr",
+            extractedText: """
+            Check-in 15.07.2026 ab 14:30 Uhr
+            Adresse: Alexanderplatz 1, Berlin
+            """,
             for: trip
         )
         let viewModel = TripDetailViewModel(trip: trip)
@@ -210,12 +224,13 @@ struct TripFlowTests {
         viewModel.showCreateStop(from: document, calendar: testCalendar())
 
         #expect(viewModel.newStopTitle == "Hotel Check-in")
+        #expect(viewModel.newStopLocationName == "Alexanderplatz 1, Berlin")
         #expect(viewModel.newStopHasScheduledDate)
         #expect(viewModel.newStopScheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: testCalendar()))
         #expect(viewModel.isShowingCreateStop)
         #expect(viewModel.isReviewingDocumentStopSuggestion)
         #expect(viewModel.stopSuggestionDocumentType == "Hotel")
-        #expect(viewModel.stopSuggestionTextExcerpt == "Check-in 15.07.2026 ab 14:30 Uhr")
+        #expect(viewModel.stopSuggestionTextExcerpt == "Check-in 15.07.2026 ab 14:30 Uhr\nAdresse: Alexanderplatz 1, Berlin")
     }
 
     @Test func tripDetailKeepsNewStopScheduleOffForUnparsedDocument() throws {

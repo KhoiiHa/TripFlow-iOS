@@ -193,6 +193,7 @@ final class TripDetailViewModel {
         showCreateStop()
         let parseResult = travelDocumentParserService.parse(document.extractedText, calendar: calendar)
         newStopTitle = parseResult.suggestedStopTitle ?? document.title
+        newStopLocationName = parseResult.suggestedLocationName ?? ""
         isReviewingDocumentStopSuggestion = true
         stopSuggestionDocumentType = document.documentType
         stopSuggestionTextExcerpt = Self.textExcerpt(from: document.extractedText)

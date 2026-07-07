@@ -23,6 +23,7 @@ struct TravelDocumentParseResult: Equatable {
     let time: TravelDocumentParsedTime?
     let scheduledDate: Date?
     let suggestedStopTitle: String?
+    let suggestedLocationName: String?
 }
 
 struct TravelDocumentParserService {
@@ -31,12 +32,14 @@ struct TravelDocumentParserService {
         let time = parseTime(in: text)
         let scheduledDate = makeDate(from: date, time: time, calendar: calendar)
         let suggestedStopTitle = parseSuggestedStopTitle(in: text)
+        let suggestedLocationName = parseSuggestedLocationName(in: text)
 
         return TravelDocumentParseResult(
             date: date,
             time: time,
             scheduledDate: scheduledDate,
-            suggestedStopTitle: suggestedStopTitle
+            suggestedStopTitle: suggestedStopTitle,
+            suggestedLocationName: suggestedLocationName
         )
     }
 
@@ -124,6 +127,41 @@ struct TravelDocumentParserService {
             || normalizedText.contains("reservierung")
             || normalizedText.contains("reservation") {
             return "Reservierung"
+        }
+
+        return nil
+    }
+
+    private func parseSuggestedLocationName(in text: String) -> String? {
+        let locationLabels = [
+            "adresse",
+            "address",
+            "ort",
+            "location",
+            "flughafen",
+            "airport",
+            "bahnhof",
+            "station",
+            "hotel"
+        ]
+
+        for line in text.split(whereSeparator: \.isNewline) {
+            let trimmedLine = String(line).trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard let separatorIndex = trimmedLine.firstIndex(where: { $0 == ":" || $0 == "-" }) else {
+                continue
+            }
+
+            let rawLabel = String(trimmedLine[..<separatorIndex])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            let valueStartIndex = trimmedLine.index(after: separatorIndex)
+            let value = String(trimmedLine[valueStartIndex...])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if locationLabels.contains(rawLabel), value.isEmpty == false {
+                return value
+            }
         }
 
         return nil

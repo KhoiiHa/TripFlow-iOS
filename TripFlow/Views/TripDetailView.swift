@@ -297,6 +297,25 @@ struct TripDetailView: View {
     private var createStopSheet: some View {
         NavigationStack {
             Form {
+                if viewModel.isReviewingDocumentStopSuggestion {
+                    Section("Vorschlag prüfen") {
+                        LabeledContent("Stop-Name", value: viewModel.newStopTitle)
+
+                        if let scheduledDate = viewModel.newStopScheduledDate {
+                            LabeledContent("Datum", value: scheduledDate.formatted(.dateTime.day().month().year()))
+                            LabeledContent("Uhrzeit", value: scheduledDate.formatted(.dateTime.hour().minute()))
+                        }
+
+                        if viewModel.stopSuggestionTextExcerpt.isEmpty == false {
+                            LabeledContent("Textausschnitt", value: viewModel.stopSuggestionTextExcerpt)
+                        }
+
+                        if viewModel.stopSuggestionDocumentType.isEmpty == false {
+                            LabeledContent("Dokumenttyp", value: viewModel.stopSuggestionDocumentType)
+                        }
+                    }
+                }
+
                 Section("Stop") {
                     TextField("Stop-Name", text: $viewModel.newStopTitle)
                     TextField("Ort optional", text: $viewModel.newStopLocationName)
@@ -319,17 +338,25 @@ struct TripDetailView: View {
                 }
 
                 Section("Zeitpunkt") {
-                    Toggle("Datum und Uhrzeit", isOn: $viewModel.newStopHasScheduledDate)
-                        .onChange(of: viewModel.newStopHasScheduledDate) { _, newValue in
-                            viewModel.setNewStopScheduledDateEnabled(newValue)
-                        }
-
-                    if viewModel.newStopHasScheduledDate {
+                    if viewModel.isReviewingDocumentStopSuggestion {
                         DatePicker(
-                            "Zeit",
+                            "Datum und Uhrzeit",
                             selection: newStopScheduledDateBinding,
                             displayedComponents: [.date, .hourAndMinute]
                         )
+                    } else {
+                        Toggle("Datum und Uhrzeit", isOn: $viewModel.newStopHasScheduledDate)
+                            .onChange(of: viewModel.newStopHasScheduledDate) { _, newValue in
+                                viewModel.setNewStopScheduledDateEnabled(newValue)
+                            }
+
+                        if viewModel.newStopHasScheduledDate {
+                            DatePicker(
+                                "Zeit",
+                                selection: newStopScheduledDateBinding,
+                                displayedComponents: [.date, .hourAndMinute]
+                            )
+                        }
                     }
                 }
 
@@ -345,6 +372,7 @@ struct TripDetailView: View {
                     Button("Abbrechen") {
                         viewModel.isShowingCreateStop = false
                         viewModel.stopErrorMessage = nil
+                        viewModel.isReviewingDocumentStopSuggestion = false
                     }
                 }
 

@@ -189,6 +189,7 @@ struct TripFlowTests {
         let trip = try tripService.createTrip(title: "Berlin")
         let document = try travelDocumentService.createDocument(
             title: "Hotel Check-in",
+            documentType: "Hotel",
             extractedText: "Check-in 15.07.2026 ab 14:30 Uhr",
             for: trip
         )
@@ -200,6 +201,9 @@ struct TripFlowTests {
         #expect(viewModel.newStopHasScheduledDate)
         #expect(viewModel.newStopScheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: testCalendar()))
         #expect(viewModel.isShowingCreateStop)
+        #expect(viewModel.isReviewingDocumentStopSuggestion)
+        #expect(viewModel.stopSuggestionDocumentType == "Hotel")
+        #expect(viewModel.stopSuggestionTextExcerpt == "Check-in 15.07.2026 ab 14:30 Uhr")
     }
 
     @Test func tripDetailKeepsNewStopScheduleOffForUnparsedDocument() throws {
@@ -215,6 +219,25 @@ struct TripFlowTests {
 
         #expect(viewModel.newStopTitle == "Hotel")
         #expect(viewModel.newStopHasScheduledDate == false)
+        #expect(viewModel.isShowingCreateStop)
+    }
+
+    @Test @MainActor func tripDetailRejectsDocumentStopSuggestionWithoutDate() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Hotel Check-in",
+            extractedText: "Check-in 15.07.2026 ab 14:30 Uhr",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+        let modelContext = try makeModelContext()
+        viewModel.showCreateStop(from: document, calendar: testCalendar())
+        viewModel.newStopScheduledDate = nil
+
+        viewModel.createStop(for: trip, in: modelContext)
+
+        #expect(trip.stops.isEmpty)
+        #expect(viewModel.stopErrorMessage == "Bitte pruefe Datum und Uhrzeit fuer den vorgeschlagenen Stop.")
         #expect(viewModel.isShowingCreateStop)
     }
 

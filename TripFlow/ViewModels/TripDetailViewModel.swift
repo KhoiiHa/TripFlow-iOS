@@ -26,6 +26,9 @@ final class TripDetailViewModel {
     var isShowingCreateStop = false
     var stopErrorMessage: String?
     var isResolvingNewStopCoordinates = false
+    var isReviewingDocumentStopSuggestion = false
+    var stopSuggestionDocumentType = ""
+    var stopSuggestionTextExcerpt = ""
     var newDocumentTitle = ""
     var newDocumentType = ""
     var newDocumentFileName = ""
@@ -180,12 +183,18 @@ final class TripDetailViewModel {
         newStopHasScheduledDate = false
         stopErrorMessage = nil
         isResolvingNewStopCoordinates = false
+        isReviewingDocumentStopSuggestion = false
+        stopSuggestionDocumentType = ""
+        stopSuggestionTextExcerpt = ""
         isShowingCreateStop = true
     }
 
     func showCreateStop(from document: TravelDocument, calendar: Calendar = .current) {
         showCreateStop()
         newStopTitle = document.title
+        isReviewingDocumentStopSuggestion = true
+        stopSuggestionDocumentType = document.documentType
+        stopSuggestionTextExcerpt = Self.textExcerpt(from: document.extractedText)
 
         if let scheduledDate = parsedScheduleDate(for: document, calendar: calendar) {
             newStopScheduledDate = scheduledDate
@@ -209,6 +218,11 @@ final class TripDetailViewModel {
 
     func createStop(for trip: Trip, in modelContext: ModelContext) {
         do {
+            guard isReviewingDocumentStopSuggestion == false || (newStopHasScheduledDate && newStopScheduledDate != nil) else {
+                stopErrorMessage = "Bitte pruefe Datum und Uhrzeit fuer den vorgeschlagenen Stop."
+                return
+            }
+
             let coordinates = try stopService.coordinates(
                 latitudeText: newStopLatitudeText,
                 longitudeText: newStopLongitudeText
@@ -230,6 +244,9 @@ final class TripDetailViewModel {
             newStopHasScheduledDate = false
             stopErrorMessage = nil
             isShowingCreateStop = false
+            isReviewingDocumentStopSuggestion = false
+            stopSuggestionDocumentType = ""
+            stopSuggestionTextExcerpt = ""
         } catch StopValidationError.emptyTitle {
             stopErrorMessage = "Bitte gib einen Namen fuer den Stop ein."
         } catch StopValidationError.invalidCoordinates {
@@ -302,5 +319,15 @@ final class TripDetailViewModel {
 
     private static func coordinateText(_ coordinate: Double) -> String {
         String(coordinate)
+    }
+
+    private static func textExcerpt(from text: String) -> String {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard trimmedText.count > 120 else {
+            return trimmedText
+        }
+
+        return String(trimmedText.prefix(120)) + "..."
     }
 }

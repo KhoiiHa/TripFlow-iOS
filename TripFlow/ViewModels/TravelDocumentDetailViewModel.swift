@@ -20,16 +20,37 @@ final class TravelDocumentDetailViewModel {
     }
 
     private let travelDocumentService: TravelDocumentService
+    private let travelDocumentParserService: TravelDocumentParserService
 
     init(
         document: TravelDocument,
-        travelDocumentService: TravelDocumentService = TravelDocumentService()
+        travelDocumentService: TravelDocumentService = TravelDocumentService(),
+        travelDocumentParserService: TravelDocumentParserService = TravelDocumentParserService()
     ) {
         title = document.title
         documentType = document.documentType
         fileName = document.fileName
         extractedText = document.extractedText
         self.travelDocumentService = travelDocumentService
+        self.travelDocumentParserService = travelDocumentParserService
+    }
+
+    func parsedTravelDocumentResult(calendar: Calendar = .current) -> TravelDocumentParseResult {
+        travelDocumentParserService.parse(extractedText, calendar: calendar)
+    }
+
+    func parsedScheduleText(calendar: Calendar = .current) -> String? {
+        guard let scheduledDate = parsedTravelDocumentResult(calendar: calendar).scheduledDate else {
+            return nil
+        }
+
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+
+        return formatter.string(from: scheduledDate)
     }
 
     func save(document: TravelDocument) {

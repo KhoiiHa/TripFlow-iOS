@@ -256,6 +256,28 @@ struct TripFlowTests {
         #expect(viewModel.extractedText == "Check-in 15:00")
     }
 
+    @Test func documentDetailParsesScheduleFromExtractedText() {
+        let document = TravelDocument(
+            title: "Hotel",
+            extractedText: "Check-in 15.07.2026 ab 14:30 Uhr"
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        let result = viewModel.parsedTravelDocumentResult(calendar: testCalendar())
+
+        #expect(result.scheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: testCalendar()))
+    }
+
+    @Test func documentDetailDoesNotShowScheduleForUnparsedText() {
+        let document = TravelDocument(
+            title: "Hotel",
+            extractedText: "Reservierung ohne Datum"
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        #expect(viewModel.parsedScheduleText(calendar: testCalendar()) == nil)
+    }
+
     @Test func documentDetailSaveUpdatesDocument() {
         let document = TravelDocument(title: "Hotel")
         let viewModel = TravelDocumentDetailViewModel(document: document)

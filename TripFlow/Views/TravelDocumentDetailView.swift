@@ -30,6 +30,12 @@ struct TravelDocumentDetailView: View {
                     .frame(minHeight: 180)
             }
 
+            if let parsedScheduleText = viewModel.parsedScheduleText() {
+                Section("Erkannte Reisedaten") {
+                    LabeledContent("Datum und Uhrzeit", value: parsedScheduleText)
+                }
+            }
+
             if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)
                     .font(.footnote)

@@ -48,6 +48,7 @@ final class TripDetailViewModel {
     private let tripService: TripService
     private let stopService: StopService
     private let travelDocumentService: TravelDocumentService
+    private let travelDocumentParserService: TravelDocumentParserService
     private let timelineService: TimelineService
     private let mapService: MapService
     private let geocodingService: any LocationGeocoding
@@ -57,6 +58,7 @@ final class TripDetailViewModel {
         tripService: TripService = TripService(),
         stopService: StopService = StopService(),
         travelDocumentService: TravelDocumentService = TravelDocumentService(),
+        travelDocumentParserService: TravelDocumentParserService = TravelDocumentParserService(),
         timelineService: TimelineService = TimelineService(),
         mapService: MapService = MapService(),
         geocodingService: any LocationGeocoding = LocationGeocodingService()
@@ -69,6 +71,7 @@ final class TripDetailViewModel {
         self.tripService = tripService
         self.stopService = stopService
         self.travelDocumentService = travelDocumentService
+        self.travelDocumentParserService = travelDocumentParserService
         self.timelineService = timelineService
         self.mapService = mapService
         self.geocodingService = geocodingService
@@ -156,6 +159,10 @@ final class TripDetailViewModel {
         return details.isEmpty ? nil : details.joined(separator: " - ")
     }
 
+    func parsedScheduleDate(for document: TravelDocument, calendar: Calendar = .current) -> Date? {
+        travelDocumentParserService.parse(document.extractedText, calendar: calendar).scheduledDate
+    }
+
     func mapStops(for trip: Trip) -> [MapStop] {
         mapService.mapStops(for: trip)
     }
@@ -174,6 +181,16 @@ final class TripDetailViewModel {
         stopErrorMessage = nil
         isResolvingNewStopCoordinates = false
         isShowingCreateStop = true
+    }
+
+    func showCreateStop(from document: TravelDocument, calendar: Calendar = .current) {
+        showCreateStop()
+        newStopTitle = document.title
+
+        if let scheduledDate = parsedScheduleDate(for: document, calendar: calendar) {
+            newStopScheduledDate = scheduledDate
+            newStopHasScheduledDate = true
+        }
     }
 
     func showCreateDocument() {

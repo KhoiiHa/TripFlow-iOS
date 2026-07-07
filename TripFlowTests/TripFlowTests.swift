@@ -185,6 +185,39 @@ struct TripFlowTests {
         #expect(viewModel.documentSubtitle(for: document) == "Booking - hotel.pdf")
     }
 
+    @Test func tripDetailPrefillsNewStopFromDocumentSchedule() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Hotel Check-in",
+            extractedText: "Check-in 15.07.2026 ab 14:30 Uhr",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        viewModel.showCreateStop(from: document, calendar: testCalendar())
+
+        #expect(viewModel.newStopTitle == "Hotel Check-in")
+        #expect(viewModel.newStopHasScheduledDate)
+        #expect(viewModel.newStopScheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: testCalendar()))
+        #expect(viewModel.isShowingCreateStop)
+    }
+
+    @Test func tripDetailKeepsNewStopScheduleOffForUnparsedDocument() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Hotel",
+            extractedText: "Reservierung ohne Datum",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        viewModel.showCreateStop(from: document, calendar: testCalendar())
+
+        #expect(viewModel.newStopTitle == "Hotel")
+        #expect(viewModel.newStopHasScheduledDate == false)
+        #expect(viewModel.isShowingCreateStop)
+    }
+
     @Test @MainActor func tripDetailCreatesDocumentFromSheetState() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let viewModel = TripDetailViewModel(trip: trip)

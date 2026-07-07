@@ -186,6 +186,16 @@ struct TripDetailView: View {
             } else {
                 ForEach(documents) { document in
                     documentRow(document)
+                        .swipeActions {
+                            if viewModel.parsedScheduleDate(for: document) != nil {
+                                Button {
+                                    viewModel.showCreateStop(from: document)
+                                } label: {
+                                    Label("Stop", systemImage: "calendar.badge.plus")
+                                }
+                                .tint(.blue)
+                            }
+                        }
                 }
                 .onDelete { offsets in
                     viewModel.deleteDocuments(documents, at: offsets, from: trip, in: modelContext)

@@ -197,6 +197,22 @@ struct TripFlowTests {
         #expect(viewModel.isShowingCreateDocument)
     }
 
+    @Test @MainActor func tripDetailDeletesDocumentFromTripAndContext() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(title: "Hotelbuchung", for: trip)
+        let viewModel = TripDetailViewModel(trip: trip)
+        let modelContext = try makeModelContext()
+        modelContext.insert(trip)
+        modelContext.insert(document)
+
+        viewModel.deleteDocuments([document], at: IndexSet(integer: 0), from: trip, in: modelContext)
+        try modelContext.save()
+
+        let documents = try modelContext.fetch(FetchDescriptor<TravelDocument>())
+        #expect(trip.documents.isEmpty)
+        #expect(documents.isEmpty)
+    }
+
     @Test func documentDetailInitializesFromDocument() {
         let document = TravelDocument(
             title: "Hotelbuchung",

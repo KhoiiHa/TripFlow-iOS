@@ -187,6 +187,9 @@ struct TripDetailView: View {
                 ForEach(documents) { document in
                     documentRow(document)
                 }
+                .onDelete { offsets in
+                    viewModel.deleteDocuments(documents, at: offsets, from: trip, in: modelContext)
+                }
             }
 
             Button {

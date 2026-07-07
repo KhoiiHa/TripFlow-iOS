@@ -269,6 +269,20 @@ final class TripDetailViewModel {
         trip.updatedAt = Date()
     }
 
+    func deleteDocuments(_ documents: [TravelDocument], at offsets: IndexSet, from trip: Trip, in modelContext: ModelContext) {
+        for index in offsets {
+            let document = documents[index]
+
+            if let tripDocumentIndex = trip.documents.firstIndex(where: { $0 === document }) {
+                trip.documents.remove(at: tripDocumentIndex)
+            }
+
+            modelContext.delete(document)
+        }
+
+        trip.updatedAt = Date()
+    }
+
     private static func coordinateText(_ coordinate: Double) -> String {
         String(coordinate)
     }

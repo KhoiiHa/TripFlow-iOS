@@ -39,6 +39,14 @@ final class TravelDocumentDetailViewModel {
         travelDocumentParserService.parse(extractedText, calendar: calendar)
     }
 
+    func hasParsedTravelData(calendar: Calendar = .current) -> Bool {
+        let result = parsedTravelDocumentResult(calendar: calendar)
+
+        return result.scheduledDate != nil
+            || result.suggestedStopTitle != nil
+            || result.suggestedLocationName != nil
+    }
+
     func parsedScheduleText(calendar: Calendar = .current) -> String? {
         guard let scheduledDate = parsedTravelDocumentResult(calendar: calendar).scheduledDate else {
             return nil
@@ -51,6 +59,14 @@ final class TravelDocumentDetailViewModel {
         formatter.timeStyle = .short
 
         return formatter.string(from: scheduledDate)
+    }
+
+    func parsedSuggestedStopTitle(calendar: Calendar = .current) -> String? {
+        parsedTravelDocumentResult(calendar: calendar).suggestedStopTitle
+    }
+
+    func parsedSuggestedLocationName(calendar: Calendar = .current) -> String? {
+        parsedTravelDocumentResult(calendar: calendar).suggestedLocationName
     }
 
     func save(document: TravelDocument) {

@@ -30,9 +30,19 @@ struct TravelDocumentDetailView: View {
                     .frame(minHeight: 180)
             }
 
-            if let parsedScheduleText = viewModel.parsedScheduleText() {
+            if viewModel.hasParsedTravelData() {
                 Section("Erkannte Reisedaten") {
-                    LabeledContent("Datum und Uhrzeit", value: parsedScheduleText)
+                    if let suggestedStopTitle = viewModel.parsedSuggestedStopTitle() {
+                        LabeledContent("Stop-Vorschlag", value: suggestedStopTitle)
+                    }
+
+                    if let parsedScheduleText = viewModel.parsedScheduleText() {
+                        LabeledContent("Datum und Uhrzeit", value: parsedScheduleText)
+                    }
+
+                    if let suggestedLocationName = viewModel.parsedSuggestedLocationName() {
+                        LabeledContent("Ort", value: suggestedLocationName)
+                    }
                 }
             }
 

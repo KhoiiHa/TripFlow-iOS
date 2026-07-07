@@ -351,6 +351,21 @@ struct TripFlowTests {
         #expect(result.scheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: testCalendar()))
     }
 
+    @Test func documentDetailParsesSuggestedStopTitleAndLocation() {
+        let document = TravelDocument(
+            title: "Hotel",
+            extractedText: """
+            Check-in 15.07.2026 ab 14:30 Uhr
+            Adresse: Alexanderplatz 1, Berlin
+            """
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        #expect(viewModel.hasParsedTravelData(calendar: testCalendar()))
+        #expect(viewModel.parsedSuggestedStopTitle(calendar: testCalendar()) == "Hotel Check-in")
+        #expect(viewModel.parsedSuggestedLocationName(calendar: testCalendar()) == "Alexanderplatz 1, Berlin")
+    }
+
     @Test func documentDetailDoesNotShowScheduleForUnparsedText() {
         let document = TravelDocument(
             title: "Hotel",

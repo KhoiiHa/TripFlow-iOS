@@ -99,6 +99,9 @@ struct TripDetailView: View {
         .sheet(isPresented: $viewModel.isShowingCreateStop) {
             createStopSheet
         }
+        .sheet(isPresented: $viewModel.isShowingCreateDocument) {
+            createDocumentSheet
+        }
     }
 
     private var timelineSection: some View {
@@ -184,6 +187,12 @@ struct TripDetailView: View {
                 ForEach(documents) { document in
                     documentRow(document)
                 }
+            }
+
+            Button {
+                viewModel.showCreateDocument()
+            } label: {
+                Label("Reiseunterlage hinzufügen", systemImage: "doc.badge.plus")
             }
         }
     }
@@ -330,6 +339,46 @@ struct TripDetailView: View {
                 }
             }
             .presentationDetents([.medium])
+        }
+    }
+
+    private var createDocumentSheet: some View {
+        NavigationStack {
+            Form {
+                Section("Reiseunterlage") {
+                    TextField("Name", text: $viewModel.newDocumentTitle)
+                    TextField("Typ optional", text: $viewModel.newDocumentType)
+                    TextField("Dateiname optional", text: $viewModel.newDocumentFileName)
+                }
+
+                Section("Text") {
+                    TextEditor(text: $viewModel.newDocumentExtractedText)
+                        .frame(minHeight: 120)
+                }
+
+                if let documentErrorMessage = viewModel.documentErrorMessage {
+                    Text(documentErrorMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
+            }
+            .navigationTitle("Neue Unterlage")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Abbrechen") {
+                        viewModel.isShowingCreateDocument = false
+                        viewModel.documentErrorMessage = nil
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Erstellen") {
+                        viewModel.createDocument(for: trip, in: modelContext)
+                    }
+                    .disabled(viewModel.canCreateDocument == false)
+                }
+            }
+            .presentationDetents([.medium, .large])
         }
     }
 

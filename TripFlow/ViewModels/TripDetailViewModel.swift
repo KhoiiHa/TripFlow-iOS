@@ -26,6 +26,12 @@ final class TripDetailViewModel {
     var isShowingCreateStop = false
     var stopErrorMessage: String?
     var isResolvingNewStopCoordinates = false
+    var newDocumentTitle = ""
+    var newDocumentType = ""
+    var newDocumentFileName = ""
+    var newDocumentExtractedText = ""
+    var isShowingCreateDocument = false
+    var documentErrorMessage: String?
 
     var canSave: Bool {
         title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
@@ -35,8 +41,13 @@ final class TripDetailViewModel {
         newStopTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
 
+    var canCreateDocument: Bool {
+        newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
+
     private let tripService: TripService
     private let stopService: StopService
+    private let travelDocumentService: TravelDocumentService
     private let timelineService: TimelineService
     private let mapService: MapService
     private let geocodingService: any LocationGeocoding
@@ -45,6 +56,7 @@ final class TripDetailViewModel {
         trip: Trip,
         tripService: TripService = TripService(),
         stopService: StopService = StopService(),
+        travelDocumentService: TravelDocumentService = TravelDocumentService(),
         timelineService: TimelineService = TimelineService(),
         mapService: MapService = MapService(),
         geocodingService: any LocationGeocoding = LocationGeocodingService()
@@ -56,6 +68,7 @@ final class TripDetailViewModel {
         hasEndDate = trip.endDate != nil
         self.tripService = tripService
         self.stopService = stopService
+        self.travelDocumentService = travelDocumentService
         self.timelineService = timelineService
         self.mapService = mapService
         self.geocodingService = geocodingService
@@ -163,6 +176,15 @@ final class TripDetailViewModel {
         isShowingCreateStop = true
     }
 
+    func showCreateDocument() {
+        newDocumentTitle = ""
+        newDocumentType = ""
+        newDocumentFileName = ""
+        newDocumentExtractedText = ""
+        documentErrorMessage = nil
+        isShowingCreateDocument = true
+    }
+
     func setNewStopScheduledDateEnabled(_ isEnabled: Bool) {
         newStopHasScheduledDate = isEnabled
         newStopScheduledDate = isEnabled ? (newStopScheduledDate ?? startDate ?? Date()) : nil
@@ -197,6 +219,29 @@ final class TripDetailViewModel {
             stopErrorMessage = "Bitte gib gueltige Koordinaten ein."
         } catch {
             stopErrorMessage = "Der Stop konnte nicht erstellt werden."
+        }
+    }
+
+    func createDocument(for trip: Trip, in modelContext: ModelContext) {
+        do {
+            let document = try travelDocumentService.createDocument(
+                title: newDocumentTitle,
+                documentType: newDocumentType,
+                fileName: newDocumentFileName,
+                extractedText: newDocumentExtractedText,
+                for: trip
+            )
+            modelContext.insert(document)
+            newDocumentTitle = ""
+            newDocumentType = ""
+            newDocumentFileName = ""
+            newDocumentExtractedText = ""
+            documentErrorMessage = nil
+            isShowingCreateDocument = false
+        } catch TravelDocumentValidationError.emptyTitle {
+            documentErrorMessage = "Bitte gib einen Namen fuer die Reiseunterlage ein."
+        } catch {
+            documentErrorMessage = "Die Reiseunterlage konnte nicht erstellt werden."
         }
     }
 

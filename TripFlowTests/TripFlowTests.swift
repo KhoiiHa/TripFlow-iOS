@@ -7,6 +7,7 @@
 
 import Foundation
 import MapKit
+import SwiftData
 import Testing
 @testable import TripFlow
 
@@ -155,6 +156,45 @@ struct TripFlowTests {
         let viewModel = TripDetailViewModel(trip: trip)
 
         #expect(viewModel.documentSubtitle(for: document) == "Booking - hotel.pdf")
+    }
+
+    @Test @MainActor func tripDetailCreatesDocumentFromSheetState() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        let modelContext = try makeModelContext()
+        viewModel.newDocumentTitle = "  Hotelbuchung  "
+        viewModel.newDocumentType = "  Hotel  "
+        viewModel.newDocumentFileName = "  hotel.pdf  "
+        viewModel.newDocumentExtractedText = "  Check-in 15:00  "
+        viewModel.isShowingCreateDocument = true
+
+        viewModel.createDocument(for: trip, in: modelContext)
+
+        #expect(trip.documents.count == 1)
+        #expect(trip.documents.first?.title == "Hotelbuchung")
+        #expect(trip.documents.first?.documentType == "Hotel")
+        #expect(trip.documents.first?.fileName == "hotel.pdf")
+        #expect(trip.documents.first?.extractedText == "Check-in 15:00")
+        #expect(viewModel.newDocumentTitle.isEmpty)
+        #expect(viewModel.newDocumentType.isEmpty)
+        #expect(viewModel.newDocumentFileName.isEmpty)
+        #expect(viewModel.newDocumentExtractedText.isEmpty)
+        #expect(viewModel.documentErrorMessage == nil)
+        #expect(viewModel.isShowingCreateDocument == false)
+    }
+
+    @Test @MainActor func tripDetailRejectsDocumentWithoutTitle() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        let modelContext = try makeModelContext()
+        viewModel.newDocumentTitle = "   "
+        viewModel.isShowingCreateDocument = true
+
+        viewModel.createDocument(for: trip, in: modelContext)
+
+        #expect(trip.documents.isEmpty)
+        #expect(viewModel.documentErrorMessage == "Bitte gib einen Namen fuer die Reiseunterlage ein.")
+        #expect(viewModel.isShowingCreateDocument)
     }
 
     @Test func createStopTrimsTitleAndLocation() throws {
@@ -505,6 +545,19 @@ struct TripFlowTests {
             hour: hour,
             minute: minute
         ).date ?? Date()
+    }
+
+    @MainActor
+    private func makeModelContext() throws -> ModelContext {
+        let schema = Schema([
+            Trip.self,
+            Stop.self,
+            TravelDocument.self,
+        ])
+        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: schema, configurations: [configuration])
+
+        return ModelContext(container)
     }
 }
 

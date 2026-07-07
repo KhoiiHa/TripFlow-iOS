@@ -306,6 +306,10 @@ struct TripDetailView: View {
                             LabeledContent("Uhrzeit", value: scheduledDate.formatted(.dateTime.hour().minute()))
                         }
 
+                        if viewModel.newStopLocationName.isEmpty == false {
+                            LabeledContent("Ort", value: viewModel.newStopLocationName)
+                        }
+
                         if viewModel.stopSuggestionTextExcerpt.isEmpty == false {
                             LabeledContent("Textausschnitt", value: viewModel.stopSuggestionTextExcerpt)
                         }

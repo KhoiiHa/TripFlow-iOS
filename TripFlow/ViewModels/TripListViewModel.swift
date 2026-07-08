@@ -27,9 +27,14 @@ final class TripListViewModel {
     }
 
     private let tripService: TripService
+    private let planningStatusService: TripPlanningStatusService
 
-    init(tripService: TripService = TripService()) {
+    init(
+        tripService: TripService = TripService(),
+        planningStatusService: TripPlanningStatusService = TripPlanningStatusService()
+    ) {
         self.tripService = tripService
+        self.planningStatusService = planningStatusService
     }
 
     func showCreateTrip() {
@@ -67,19 +72,10 @@ final class TripListViewModel {
     }
 
     func dateSummary(for trip: Trip) -> String {
-        switch (trip.startDate, trip.endDate) {
-        case let (startDate?, endDate?):
-            return "\(format(date: startDate)) - \(format(date: endDate))"
-        case let (startDate?, nil):
-            return "Start: \(format(date: startDate))"
-        case let (nil, endDate?):
-            return "Ende: \(format(date: endDate))"
-        case (nil, nil):
-            return "Erstellt: \(format(date: trip.createdAt))"
-        }
+        planningSummary(for: trip).dateRangeText
     }
 
-    private func format(date: Date) -> String {
-        date.formatted(.dateTime.day().month().year())
+    func planningSummary(for trip: Trip) -> TripPlanningSummary {
+        planningStatusService.summary(for: trip)
     }
 }

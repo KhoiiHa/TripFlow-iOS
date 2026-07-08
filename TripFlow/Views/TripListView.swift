@@ -27,13 +27,34 @@ struct TripListView: View {
                         NavigationLink {
                             TripDetailView(trip: trip)
                         } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(trip.title)
-                                    .font(.headline)
+                            let summary = viewModel.planningSummary(for: trip)
 
-                                Text(viewModel.dateSummary(for: trip))
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text(trip.title)
+                                        .font(.headline)
+
+                                    Spacer()
+
+                                    Text(summary.status.title)
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundStyle(statusForegroundStyle(for: summary.status))
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(statusBackgroundStyle(for: summary.status), in: Capsule())
+                                }
+
+                                Text(summary.dateRangeText)
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
+
+                                HStack(spacing: 8) {
+                                    Label(summary.stopCountText, systemImage: "mappin.and.ellipse")
+                                    Label(summary.documentCountText, systemImage: "doc.text")
+                                }
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                             }
                             .padding(.vertical, 4)
                         }
@@ -95,6 +116,21 @@ struct TripListView: View {
             }
             .presentationDetents([.medium])
         }
+    }
+
+    private func statusForegroundStyle(for status: TripPlanningStatus) -> Color {
+        switch status {
+        case .empty:
+            return .secondary
+        case .planning:
+            return .blue
+        case .ready:
+            return .green
+        }
+    }
+
+    private func statusBackgroundStyle(for status: TripPlanningStatus) -> Color {
+        statusForegroundStyle(for: status).opacity(0.12)
     }
 }
 

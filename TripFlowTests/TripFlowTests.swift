@@ -18,6 +18,7 @@ struct TripFlowTests {
     private let mapService = MapService()
     private let travelDocumentService = TravelDocumentService()
     private let travelDocumentParserService = TravelDocumentParserService()
+    private let tripPlanningStatusService = TripPlanningStatusService()
 
     @Test func createTripTrimsTitle() throws {
         let trip = try tripService.createTrip(title: "  Berlin 2026  ")
@@ -50,6 +51,40 @@ struct TripFlowTests {
         #expect(viewModel.newTripTitle == "")
         #expect(viewModel.errorMessage == nil)
         #expect(viewModel.isShowingCreateTrip == false)
+    }
+
+    @Test func tripPlanningStatusIsEmptyWithoutStops() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+
+        let summary = tripPlanningStatusService.summary(for: trip)
+
+        #expect(summary.status.title == "Empty")
+        #expect(summary.stopCountText == "0 Stops")
+        #expect(summary.documentCountText == "0 Unterlagen")
+        #expect(summary.dateRangeText == "Zeitraum offen")
+    }
+
+    @Test func tripPlanningStatusIsPlanningWithStopsOnly() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        _ = try stopService.createStop(title: "Hotel", locationName: "", for: trip)
+
+        let summary = tripPlanningStatusService.summary(for: trip)
+
+        #expect(summary.status.title == "Planning")
+        #expect(summary.stopCountText == "1 Stop")
+        #expect(summary.documentCountText == "0 Unterlagen")
+    }
+
+    @Test func tripPlanningStatusIsReadyWithStopsAndDocuments() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        _ = try stopService.createStop(title: "Hotel", locationName: "", for: trip)
+        _ = try travelDocumentService.createDocument(title: "Hotelbuchung", for: trip)
+
+        let summary = tripPlanningStatusService.summary(for: trip)
+
+        #expect(summary.status.title == "Ready")
+        #expect(summary.stopCountText == "1 Stop")
+        #expect(summary.documentCountText == "1 Unterlage")
     }
 
     @Test func createTripRejectsEndDateBeforeStartDate() {

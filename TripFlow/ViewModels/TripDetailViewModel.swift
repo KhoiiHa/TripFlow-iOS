@@ -176,6 +176,10 @@ final class TripDetailViewModel {
             details.append("Ref \(reservationNumber)")
         }
 
+        if let suggestedLocationName = parseResult.suggestedLocationName {
+            details.append("Ort \(suggestedLocationName)")
+        }
+
         if let parsedDateText = Self.parsedDateText(from: parseResult) {
             details.append(parsedDateText)
         }

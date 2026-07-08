@@ -265,6 +265,21 @@ struct TripFlowTests {
         #expect(viewModel.documentSubtitle(for: document) == "15.07.2026 14:30 - OCR vorhanden")
     }
 
+    @Test func tripDetailDocumentSubtitleShowsParsedLocationName() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Hotel",
+            extractedText: """
+            Check-in 15.07.2026 ab 14:30 Uhr
+            Adresse: Alexanderplatz 1, Berlin
+            """,
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        #expect(viewModel.documentSubtitle(for: document) == "Ort Alexanderplatz 1, Berlin - 15.07.2026 14:30 - OCR vorhanden")
+    }
+
     @Test func tripDetailPrefillsNewStopFromDocumentSchedule() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let document = try travelDocumentService.createDocument(

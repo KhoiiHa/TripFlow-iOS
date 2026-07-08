@@ -304,7 +304,7 @@ struct TripDetailView: View {
         NavigationStack {
             Form {
                 if viewModel.isReviewingDocumentStopSuggestion {
-                    Section("Erkannte Werte") {
+                    Section("Aus Dokument erkannt") {
                         LabeledContent("Stop-Name", value: viewModel.newStopTitle)
 
                         if let scheduledDate = viewModel.newStopScheduledDate {
@@ -322,7 +322,7 @@ struct TripDetailView: View {
                         || viewModel.stopSuggestionFlightNumber.isEmpty == false
                         || viewModel.stopSuggestionTrainNumber.isEmpty == false
                         || viewModel.stopSuggestionReservationNumber.isEmpty == false {
-                        Section("Quelle") {
+                        Section("Dokumentquelle") {
                             if viewModel.stopSuggestionDocumentType.isEmpty == false {
                                 LabeledContent("Dokumenttyp", value: viewModel.stopSuggestionDocumentType)
                             }
@@ -353,7 +353,7 @@ struct TripDetailView: View {
                     }
                 }
 
-                Section(viewModel.isReviewingDocumentStopSuggestion ? "Stop bearbeiten" : "Stop") {
+                Section(viewModel.isReviewingDocumentStopSuggestion ? "Vor dem Speichern bearbeiten" : "Stop") {
                     TextField("Stop-Name", text: $viewModel.newStopTitle)
                     TextField("Ort optional", text: $viewModel.newStopLocationName)
                 }

@@ -108,7 +108,7 @@ struct TravelDocumentDetailView: View {
     private var stopSuggestionSheet: some View {
         NavigationStack {
             Form {
-                Section("Erkannte Werte") {
+                Section("Aus Dokument erkannt") {
                     LabeledContent("Stop-Name", value: viewModel.stopSuggestionTitle)
 
                     if let scheduledDate = viewModel.stopSuggestionScheduledDate {
@@ -121,7 +121,7 @@ struct TravelDocumentDetailView: View {
                     }
                 }
 
-                Section("Stop bearbeiten") {
+                Section("Vor dem Speichern bearbeiten") {
                     TextField("Stop-Name", text: $viewModel.stopSuggestionTitle)
                     TextField("Ort optional", text: $viewModel.stopSuggestionLocationName)
                     DatePicker(
@@ -136,7 +136,7 @@ struct TravelDocumentDetailView: View {
                     || viewModel.stopSuggestionFlightNumber.isEmpty == false
                     || viewModel.stopSuggestionTrainNumber.isEmpty == false
                     || viewModel.stopSuggestionReservationNumber.isEmpty == false {
-                    Section("Quelle") {
+                    Section("Dokumentquelle") {
                         if viewModel.stopSuggestionDocumentType.isEmpty == false {
                             LabeledContent("Dokumenttyp", value: viewModel.stopSuggestionDocumentType)
                         }

@@ -114,6 +114,18 @@ struct TripFlowTests {
         #expect(viewModel.saveDisabledReason == "Enddatum darf nicht vor dem Startdatum liegen.")
     }
 
+    @Test func tripDetailSaveClearsOldErrorOnNewAttempt() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        viewModel.title = "Paris"
+        viewModel.errorMessage = "Alter Fehler"
+
+        viewModel.save(trip: trip)
+
+        #expect(trip.title == "Paris")
+        #expect(viewModel.errorMessage == nil)
+    }
+
     @Test func createTravelDocumentTrimsValuesAndAssignsTrip() throws {
         let trip = try tripService.createTrip(title: "Berlin")
 
@@ -1124,6 +1136,19 @@ struct TripFlowTests {
 
         #expect(viewModel.canSave == false)
         #expect(viewModel.saveDisabledReason == "Name fuer den Stop fehlt.")
+    }
+
+    @Test func stopDetailSaveClearsOldErrorOnNewAttempt() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let stop = try stopService.createStop(title: "Hotel", locationName: "", for: trip)
+        let viewModel = StopDetailViewModel(stop: stop)
+        viewModel.title = "Museum"
+        viewModel.errorMessage = "Alter Fehler"
+
+        viewModel.save(stop: stop)
+
+        #expect(stop.title == "Museum")
+        #expect(viewModel.errorMessage == nil)
     }
 
     @Test func timelineGroupsScheduledStopsByDay() throws {

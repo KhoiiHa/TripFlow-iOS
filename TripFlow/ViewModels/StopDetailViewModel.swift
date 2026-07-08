@@ -70,6 +70,8 @@ final class StopDetailViewModel {
     }
 
     func save(stop: Stop) {
+        errorMessage = nil
+
         do {
             let coordinates = try stopService.coordinates(
                 latitudeText: latitudeText,

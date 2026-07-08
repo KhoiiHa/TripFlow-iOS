@@ -155,6 +155,8 @@ final class TripDetailViewModel {
     }
 
     func save(trip: Trip) {
+        errorMessage = nil
+
         do {
             try tripService.updateTrip(
                 trip,

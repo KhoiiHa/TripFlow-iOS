@@ -62,6 +62,8 @@ final class TravelDocumentDetailViewModel {
         return result.scheduledDate != nil
             || result.suggestedStopTitle != nil
             || result.suggestedLocationName != nil
+            || result.flightNumber != nil
+            || result.reservationNumber != nil
     }
 
     func parsedScheduleText(calendar: Calendar = .current) -> String? {
@@ -84,6 +86,14 @@ final class TravelDocumentDetailViewModel {
 
     func parsedSuggestedLocationName(calendar: Calendar = .current) -> String? {
         parsedTravelDocumentResult(calendar: calendar).suggestedLocationName
+    }
+
+    func parsedFlightNumber(calendar: Calendar = .current) -> String? {
+        parsedTravelDocumentResult(calendar: calendar).flightNumber
+    }
+
+    func parsedReservationNumber(calendar: Calendar = .current) -> String? {
+        parsedTravelDocumentResult(calendar: calendar).reservationNumber
     }
 
     func canShowStopSuggestionAction(for document: TravelDocument, calendar: Calendar = .current) -> Bool {

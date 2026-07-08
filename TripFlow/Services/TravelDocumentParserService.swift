@@ -24,6 +24,8 @@ struct TravelDocumentParseResult: Equatable {
     let scheduledDate: Date?
     let suggestedStopTitle: String?
     let suggestedLocationName: String?
+    let flightNumber: String?
+    let reservationNumber: String?
 }
 
 struct TravelDocumentParserService {
@@ -33,13 +35,17 @@ struct TravelDocumentParserService {
         let scheduledDate = makeDate(from: date, time: time, calendar: calendar)
         let suggestedStopTitle = parseSuggestedStopTitle(in: text)
         let suggestedLocationName = parseSuggestedLocationName(in: text)
+        let flightNumber = parseFlightNumber(in: text)
+        let reservationNumber = parseReservationNumber(in: text)
 
         return TravelDocumentParseResult(
             date: date,
             time: time,
             scheduledDate: scheduledDate,
             suggestedStopTitle: suggestedStopTitle,
-            suggestedLocationName: suggestedLocationName
+            suggestedLocationName: suggestedLocationName,
+            flightNumber: flightNumber,
+            reservationNumber: reservationNumber
         )
     }
 
@@ -165,5 +171,70 @@ struct TravelDocumentParserService {
         }
 
         return nil
+    }
+
+    private func parseFlightNumber(in text: String) -> String? {
+        let regex = #/(?<flight>[A-Z]{2}\s?\d{2,4})/#
+
+        for line in text.split(whereSeparator: \.isNewline) {
+            let uppercasedLine = String(line).uppercased()
+
+            guard uppercasedLine.contains("FLUG")
+                    || uppercasedLine.contains("FLIGHT")
+                    || uppercasedLine.contains("BOARDING") else {
+                continue
+            }
+
+            if let match = uppercasedLine.firstMatch(of: regex) {
+                return String(match.flight).replacingOccurrences(of: " ", with: "")
+            }
+        }
+
+        return nil
+    }
+
+    private func parseReservationNumber(in text: String) -> String? {
+        let reservationLabels = [
+            "reservierung",
+            "reservation",
+            "buchungsnummer",
+            "booking",
+            "confirmation"
+        ]
+
+        for line in text.split(whereSeparator: \.isNewline) {
+            let trimmedLine = String(line).trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard let separatorIndex = trimmedLine.firstIndex(where: { $0 == ":" || $0 == "-" }) else {
+                continue
+            }
+
+            let rawLabel = String(trimmedLine[..<separatorIndex])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            let valueStartIndex = trimmedLine.index(after: separatorIndex)
+            let value = String(trimmedLine[valueStartIndex...])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if reservationLabels.contains(where: { rawLabel.contains($0) }),
+               let reservationNumber = firstReferenceToken(in: value) {
+                return reservationNumber
+            }
+        }
+
+        return nil
+    }
+
+    private func firstReferenceToken(in text: String) -> String? {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let token = trimmedText.split(whereSeparator: { character in
+            character.isWhitespace || character == "," || character == ";" || character == "/"
+        }).first
+
+        guard let token, token.isEmpty == false else {
+            return nil
+        }
+
+        return String(token)
     }
 }

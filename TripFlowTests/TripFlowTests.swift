@@ -164,6 +164,23 @@ struct TripFlowTests {
         #expect(result.suggestedStopTitle == "Flug")
     }
 
+    @Test func parserExtractsFlightNumberFromBoardingText() {
+        let result = travelDocumentParserService.parse("Boarding LH 2034 Gate A12 05/08/26 09:05")
+
+        #expect(result.flightNumber == "LH2034")
+    }
+
+    @Test func parserExtractsReservationNumberFromLabeledLine() {
+        let result = travelDocumentParserService.parse(
+            """
+            Hotel Check-in 15.07.2026 ab 14:30 Uhr
+            Reservierung: ABC12345
+            """
+        )
+
+        #expect(result.reservationNumber == "ABC12345")
+    }
+
     @Test func parserSuggestsLocationNameFromLabeledDocumentLine() {
         let result = travelDocumentParserService.parse(
             """
@@ -395,6 +412,21 @@ struct TripFlowTests {
         #expect(viewModel.hasParsedTravelData(calendar: testCalendar()))
         #expect(viewModel.parsedSuggestedStopTitle(calendar: testCalendar()) == "Hotel Check-in")
         #expect(viewModel.parsedSuggestedLocationName(calendar: testCalendar()) == "Alexanderplatz 1, Berlin")
+    }
+
+    @Test func documentDetailParsesDocumentReferenceMetadata() {
+        let document = TravelDocument(
+            title: "Boarding Pass",
+            extractedText: """
+            Boarding LH 2034 Gate A12 05/08/26 09:05
+            Buchungsnummer: XYZ789
+            """
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        #expect(viewModel.hasParsedTravelData(calendar: testCalendar()))
+        #expect(viewModel.parsedFlightNumber(calendar: testCalendar()) == "LH2034")
+        #expect(viewModel.parsedReservationNumber(calendar: testCalendar()) == "XYZ789")
     }
 
     @Test func documentDetailPreparesStopSuggestionFromParsedData() throws {

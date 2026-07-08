@@ -45,6 +45,14 @@ struct TravelDocumentDetailView: View {
                         LabeledContent("Ort", value: suggestedLocationName)
                     }
 
+                    if let flightNumber = viewModel.parsedFlightNumber() {
+                        LabeledContent("Flugnummer", value: flightNumber)
+                    }
+
+                    if let reservationNumber = viewModel.parsedReservationNumber() {
+                        LabeledContent("Reservierungsnummer", value: reservationNumber)
+                    }
+
                     if viewModel.canShowStopSuggestionAction(for: document) {
                         Button {
                             viewModel.showStopSuggestion(from: document)

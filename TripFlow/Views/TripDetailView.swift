@@ -304,7 +304,7 @@ struct TripDetailView: View {
         NavigationStack {
             Form {
                 if viewModel.isReviewingDocumentStopSuggestion {
-                    Section("Vorschlag prüfen") {
+                    Section("Erkannte Werte") {
                         LabeledContent("Stop-Name", value: viewModel.newStopTitle)
 
                         if let scheduledDate = viewModel.newStopScheduledDate {
@@ -315,30 +315,38 @@ struct TripDetailView: View {
                         if viewModel.newStopLocationName.isEmpty == false {
                             LabeledContent("Ort", value: viewModel.newStopLocationName)
                         }
+                    }
 
-                        if viewModel.stopSuggestionTextExcerpt.isEmpty == false {
-                            LabeledContent("Textausschnitt", value: viewModel.stopSuggestionTextExcerpt)
-                        }
+                    if viewModel.stopSuggestionTextExcerpt.isEmpty == false
+                        || viewModel.stopSuggestionDocumentType.isEmpty == false
+                        || viewModel.stopSuggestionFlightNumber.isEmpty == false
+                        || viewModel.stopSuggestionTrainNumber.isEmpty == false
+                        || viewModel.stopSuggestionReservationNumber.isEmpty == false {
+                        Section("Quelle") {
+                            if viewModel.stopSuggestionDocumentType.isEmpty == false {
+                                LabeledContent("Dokumenttyp", value: viewModel.stopSuggestionDocumentType)
+                            }
 
-                        if viewModel.stopSuggestionDocumentType.isEmpty == false {
-                            LabeledContent("Dokumenttyp", value: viewModel.stopSuggestionDocumentType)
-                        }
+                            if viewModel.stopSuggestionFlightNumber.isEmpty == false {
+                                LabeledContent("Flugnummer", value: viewModel.stopSuggestionFlightNumber)
+                            }
 
-                        if viewModel.stopSuggestionFlightNumber.isEmpty == false {
-                            LabeledContent("Flugnummer", value: viewModel.stopSuggestionFlightNumber)
-                        }
+                            if viewModel.stopSuggestionTrainNumber.isEmpty == false {
+                                LabeledContent("Zugnummer", value: viewModel.stopSuggestionTrainNumber)
+                            }
 
-                        if viewModel.stopSuggestionTrainNumber.isEmpty == false {
-                            LabeledContent("Zugnummer", value: viewModel.stopSuggestionTrainNumber)
-                        }
+                            if viewModel.stopSuggestionReservationNumber.isEmpty == false {
+                                LabeledContent("Reservierungsnummer", value: viewModel.stopSuggestionReservationNumber)
+                            }
 
-                        if viewModel.stopSuggestionReservationNumber.isEmpty == false {
-                            LabeledContent("Reservierungsnummer", value: viewModel.stopSuggestionReservationNumber)
+                            if viewModel.stopSuggestionTextExcerpt.isEmpty == false {
+                                LabeledContent("Textausschnitt", value: viewModel.stopSuggestionTextExcerpt)
+                            }
                         }
                     }
                 }
 
-                Section("Stop") {
+                Section(viewModel.isReviewingDocumentStopSuggestion ? "Stop bearbeiten" : "Stop") {
                     TextField("Stop-Name", text: $viewModel.newStopTitle)
                     TextField("Ort optional", text: $viewModel.newStopLocationName)
                 }

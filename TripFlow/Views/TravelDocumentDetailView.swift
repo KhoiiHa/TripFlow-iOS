@@ -108,7 +108,20 @@ struct TravelDocumentDetailView: View {
     private var stopSuggestionSheet: some View {
         NavigationStack {
             Form {
-                Section("Vorschlag prüfen") {
+                Section("Erkannte Werte") {
+                    LabeledContent("Stop-Name", value: viewModel.stopSuggestionTitle)
+
+                    if let scheduledDate = viewModel.stopSuggestionScheduledDate {
+                        LabeledContent("Datum", value: scheduledDate.formatted(.dateTime.day().month().year()))
+                        LabeledContent("Uhrzeit", value: scheduledDate.formatted(.dateTime.hour().minute()))
+                    }
+
+                    if viewModel.stopSuggestionLocationName.isEmpty == false {
+                        LabeledContent("Ort", value: viewModel.stopSuggestionLocationName)
+                    }
+                }
+
+                Section("Stop bearbeiten") {
                     TextField("Stop-Name", text: $viewModel.stopSuggestionTitle)
                     TextField("Ort optional", text: $viewModel.stopSuggestionLocationName)
                     DatePicker(
@@ -124,10 +137,6 @@ struct TravelDocumentDetailView: View {
                     || viewModel.stopSuggestionTrainNumber.isEmpty == false
                     || viewModel.stopSuggestionReservationNumber.isEmpty == false {
                     Section("Quelle") {
-                        if viewModel.stopSuggestionTextExcerpt.isEmpty == false {
-                            LabeledContent("Textausschnitt", value: viewModel.stopSuggestionTextExcerpt)
-                        }
-
                         if viewModel.stopSuggestionDocumentType.isEmpty == false {
                             LabeledContent("Dokumenttyp", value: viewModel.stopSuggestionDocumentType)
                         }
@@ -142,6 +151,10 @@ struct TravelDocumentDetailView: View {
 
                         if viewModel.stopSuggestionReservationNumber.isEmpty == false {
                             LabeledContent("Reservierungsnummer", value: viewModel.stopSuggestionReservationNumber)
+                        }
+
+                        if viewModel.stopSuggestionTextExcerpt.isEmpty == false {
+                            LabeledContent("Textausschnitt", value: viewModel.stopSuggestionTextExcerpt)
                         }
                     }
                 }

@@ -328,6 +328,10 @@ struct TripDetailView: View {
                             LabeledContent("Flugnummer", value: viewModel.stopSuggestionFlightNumber)
                         }
 
+                        if viewModel.stopSuggestionTrainNumber.isEmpty == false {
+                            LabeledContent("Zugnummer", value: viewModel.stopSuggestionTrainNumber)
+                        }
+
                         if viewModel.stopSuggestionReservationNumber.isEmpty == false {
                             LabeledContent("Reservierungsnummer", value: viewModel.stopSuggestionReservationNumber)
                         }

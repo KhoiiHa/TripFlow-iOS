@@ -55,6 +55,10 @@ struct TravelDocumentDetailView: View {
                         LabeledContent("Flugnummer", value: flightNumber)
                     }
 
+                    if let trainNumber = viewModel.parsedTrainNumber() {
+                        LabeledContent("Zugnummer", value: trainNumber)
+                    }
+
                     if let reservationNumber = viewModel.parsedReservationNumber() {
                         LabeledContent("Reservierungsnummer", value: reservationNumber)
                     }
@@ -117,6 +121,7 @@ struct TravelDocumentDetailView: View {
                 if viewModel.stopSuggestionTextExcerpt.isEmpty == false
                     || viewModel.stopSuggestionDocumentType.isEmpty == false
                     || viewModel.stopSuggestionFlightNumber.isEmpty == false
+                    || viewModel.stopSuggestionTrainNumber.isEmpty == false
                     || viewModel.stopSuggestionReservationNumber.isEmpty == false {
                     Section("Quelle") {
                         if viewModel.stopSuggestionTextExcerpt.isEmpty == false {
@@ -129,6 +134,10 @@ struct TravelDocumentDetailView: View {
 
                         if viewModel.stopSuggestionFlightNumber.isEmpty == false {
                             LabeledContent("Flugnummer", value: viewModel.stopSuggestionFlightNumber)
+                        }
+
+                        if viewModel.stopSuggestionTrainNumber.isEmpty == false {
+                            LabeledContent("Zugnummer", value: viewModel.stopSuggestionTrainNumber)
                         }
 
                         if viewModel.stopSuggestionReservationNumber.isEmpty == false {

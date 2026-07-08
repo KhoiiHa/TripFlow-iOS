@@ -22,6 +22,7 @@ final class TravelDocumentDetailViewModel {
     var stopSuggestionDocumentType = ""
     var stopSuggestionTextExcerpt = ""
     var stopSuggestionFlightNumber = ""
+    var stopSuggestionTrainNumber = ""
     var stopSuggestionReservationNumber = ""
     var stopSuggestionErrorMessage: String?
     var stopSuggestionSuccessMessage: String?
@@ -69,6 +70,7 @@ final class TravelDocumentDetailViewModel {
             || result.suggestedStopTitle != nil
             || result.suggestedLocationName != nil
             || result.flightNumber != nil
+            || result.trainNumber != nil
             || result.reservationNumber != nil
     }
 
@@ -96,6 +98,10 @@ final class TravelDocumentDetailViewModel {
 
     func parsedFlightNumber(calendar: Calendar = .current) -> String? {
         parsedTravelDocumentResult(calendar: calendar).flightNumber
+    }
+
+    func parsedTrainNumber(calendar: Calendar = .current) -> String? {
+        parsedTravelDocumentResult(calendar: calendar).trainNumber
     }
 
     func parsedReservationNumber(calendar: Calendar = .current) -> String? {
@@ -127,6 +133,7 @@ final class TravelDocumentDetailViewModel {
         stopSuggestionDocumentType = document.documentType
         stopSuggestionTextExcerpt = Self.textExcerpt(from: document.extractedText)
         stopSuggestionFlightNumber = result.flightNumber ?? ""
+        stopSuggestionTrainNumber = result.trainNumber ?? ""
         stopSuggestionReservationNumber = result.reservationNumber ?? ""
         stopSuggestionErrorMessage = nil
         stopSuggestionSuccessMessage = nil
@@ -158,6 +165,7 @@ final class TravelDocumentDetailViewModel {
             stopSuggestionDocumentType = ""
             stopSuggestionTextExcerpt = ""
             stopSuggestionFlightNumber = ""
+            stopSuggestionTrainNumber = ""
             stopSuggestionReservationNumber = ""
             stopSuggestionErrorMessage = nil
             stopSuggestionSuccessMessage = "Stop \"\(stop.title)\" wurde erstellt."

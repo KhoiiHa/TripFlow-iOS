@@ -31,6 +31,7 @@ final class TripDetailViewModel {
     var stopSuggestionDocumentType = ""
     var stopSuggestionTextExcerpt = ""
     var stopSuggestionFlightNumber = ""
+    var stopSuggestionTrainNumber = ""
     var stopSuggestionReservationNumber = ""
     var newDocumentTitle = ""
     var newDocumentType = ""
@@ -190,6 +191,7 @@ final class TripDetailViewModel {
         stopSuggestionDocumentType = ""
         stopSuggestionTextExcerpt = ""
         stopSuggestionFlightNumber = ""
+        stopSuggestionTrainNumber = ""
         stopSuggestionReservationNumber = ""
         isShowingCreateStop = true
     }
@@ -203,6 +205,7 @@ final class TripDetailViewModel {
         stopSuggestionDocumentType = document.documentType
         stopSuggestionTextExcerpt = Self.textExcerpt(from: document.extractedText)
         stopSuggestionFlightNumber = parseResult.flightNumber ?? ""
+        stopSuggestionTrainNumber = parseResult.trainNumber ?? ""
         stopSuggestionReservationNumber = parseResult.reservationNumber ?? ""
 
         if let scheduledDate = parseResult.scheduledDate {
@@ -258,6 +261,7 @@ final class TripDetailViewModel {
             stopSuggestionDocumentType = ""
             stopSuggestionTextExcerpt = ""
             stopSuggestionFlightNumber = ""
+            stopSuggestionTrainNumber = ""
             stopSuggestionReservationNumber = ""
         } catch StopValidationError.emptyTitle {
             stopErrorMessage = "Bitte gib einen Namen fuer den Stop ein."

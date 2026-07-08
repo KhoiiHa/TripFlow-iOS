@@ -340,6 +340,20 @@ struct TripFlowTests {
         #expect(viewModel.stopSuggestionFlightNumber == "LH2034")
     }
 
+    @Test func tripDetailPrefillsDocumentTrainNumberForStopReview() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Bahnticket",
+            extractedText: "Bahn ICE 100 Berlin Hbf 15.07.2026 08:30",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        viewModel.showCreateStop(from: document, calendar: testCalendar())
+
+        #expect(viewModel.stopSuggestionTrainNumber == "ICE100")
+    }
+
     @Test func tripDetailKeepsNewStopScheduleOffForUnparsedDocument() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let document = try travelDocumentService.createDocument(
@@ -529,6 +543,17 @@ struct TripFlowTests {
         #expect(viewModel.parsedReservationNumber(calendar: testCalendar()) == "XYZ789")
     }
 
+    @Test func documentDetailParsesTrainNumberMetadata() {
+        let document = TravelDocument(
+            title: "Bahnticket",
+            extractedText: "Bahn ICE 100 Berlin Hbf 15.07.2026 08:30"
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        #expect(viewModel.hasParsedTravelData(calendar: testCalendar()))
+        #expect(viewModel.parsedTrainNumber(calendar: testCalendar()) == "ICE100")
+    }
+
     @Test func documentDetailReportsEmptyExtractedTextState() {
         let document = TravelDocument(title: "Hotel", extractedText: "   ")
         let viewModel = TravelDocumentDetailViewModel(document: document)
@@ -590,6 +615,20 @@ struct TripFlowTests {
         #expect(viewModel.stopSuggestionFlightNumber == "LH2034")
         #expect(viewModel.stopSuggestionReservationNumber == "XYZ789")
         #expect(viewModel.canCreateStopSuggestion)
+    }
+
+    @Test func documentDetailPreparesTrainNumberForStopSuggestion() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Bahnticket",
+            extractedText: "Bahn ICE 100 Berlin Hbf 15.07.2026 08:30",
+            for: trip
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        viewModel.showStopSuggestion(from: document, calendar: testCalendar())
+
+        #expect(viewModel.stopSuggestionTrainNumber == "ICE100")
     }
 
     @Test func documentDetailLimitsStopSuggestionTextExcerpt() throws {

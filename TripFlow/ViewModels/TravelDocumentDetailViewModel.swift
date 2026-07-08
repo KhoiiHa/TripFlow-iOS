@@ -106,6 +106,18 @@ final class TravelDocumentDetailViewModel {
         document.trip != nil && parsedTravelDocumentResult(calendar: calendar).scheduledDate != nil
     }
 
+    func stopSuggestionUnavailableMessage(for document: TravelDocument, calendar: Calendar = .current) -> String? {
+        guard document.trip != nil, hasExtractedText else {
+            return nil
+        }
+
+        guard parsedTravelDocumentResult(calendar: calendar).scheduledDate == nil else {
+            return nil
+        }
+
+        return "Kein Stop-Vorschlag: Im OCR-Text wurde noch kein Datum erkannt."
+    }
+
     func showStopSuggestion(from document: TravelDocument, calendar: Calendar = .current) {
         let result = parsedTravelDocumentResult(calendar: calendar)
 

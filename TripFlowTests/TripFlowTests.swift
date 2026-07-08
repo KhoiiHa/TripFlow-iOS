@@ -484,6 +484,33 @@ struct TripFlowTests {
         #expect(viewModel.hasExtractedText)
     }
 
+    @Test func documentDetailExplainsMissingStopSuggestionDate() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Reservierung",
+            extractedText: "Reservierung ABC123 ohne Datum",
+            for: trip
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        #expect(
+            viewModel.stopSuggestionUnavailableMessage(for: document, calendar: testCalendar())
+                == "Kein Stop-Vorschlag: Im OCR-Text wurde noch kein Datum erkannt."
+        )
+    }
+
+    @Test func documentDetailDoesNotExplainMissingStopSuggestionWhenDateExists() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Hotel",
+            extractedText: "Check-in 15.07.2026 ab 14:30 Uhr",
+            for: trip
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        #expect(viewModel.stopSuggestionUnavailableMessage(for: document, calendar: testCalendar()) == nil)
+    }
+
     @Test func documentDetailPreparesStopSuggestionFromParsedData() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let document = try travelDocumentService.createDocument(

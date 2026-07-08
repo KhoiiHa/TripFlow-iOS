@@ -60,6 +60,12 @@ struct StopDetailView: View {
                     .font(.footnote)
                     .foregroundStyle(.red)
             }
+
+            if let saveDisabledReason = viewModel.saveDisabledReason {
+                Text(saveDisabledReason)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
         .navigationTitle(stop.title)
         .toolbar {

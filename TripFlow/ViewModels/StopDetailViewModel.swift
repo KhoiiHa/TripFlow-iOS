@@ -19,7 +19,15 @@ final class StopDetailViewModel {
     var isResolvingCoordinates = false
 
     var canSave: Bool {
-        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        saveDisabledReason == nil
+    }
+
+    var saveDisabledReason: String? {
+        if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "Name fuer den Stop fehlt."
+        }
+
+        return nil
     }
 
     private let stopService: StopService

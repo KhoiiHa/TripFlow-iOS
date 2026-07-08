@@ -1115,6 +1115,16 @@ struct TripFlowTests {
         }
     }
 
+    @Test func stopDetailExplainsDisabledSaveWithoutTitle() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let stop = try stopService.createStop(title: "Hotel", locationName: "", for: trip)
+        let viewModel = StopDetailViewModel(stop: stop)
+        viewModel.title = "   "
+
+        #expect(viewModel.canSave == false)
+        #expect(viewModel.saveDisabledReason == "Name fuer den Stop fehlt.")
+    }
+
     @Test func timelineGroupsScheduledStopsByDay() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let calendar = testCalendar()

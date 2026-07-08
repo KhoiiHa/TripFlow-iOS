@@ -409,7 +409,26 @@ struct TripFlowTests {
         viewModel.createStop(for: trip, in: modelContext)
 
         #expect(trip.stops.isEmpty)
-        #expect(viewModel.stopErrorMessage == "Bitte pruefe Datum und Uhrzeit fuer den vorgeschlagenen Stop.")
+        #expect(viewModel.stopErrorMessage == "Bitte waehle ein Datum und eine Uhrzeit fuer den vorgeschlagenen Stop aus.")
+        #expect(viewModel.isShowingCreateStop)
+    }
+
+    @Test @MainActor func tripDetailRejectsDocumentStopSuggestionWithoutTitle() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Hotel Check-in",
+            extractedText: "Check-in 15.07.2026 ab 14:30 Uhr",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+        let modelContext = try makeModelContext()
+        viewModel.showCreateStop(from: document, calendar: testCalendar())
+        viewModel.newStopTitle = "   "
+
+        viewModel.createStop(for: trip, in: modelContext)
+
+        #expect(trip.stops.isEmpty)
+        #expect(viewModel.stopErrorMessage == "Bitte gib einen Namen fuer den vorgeschlagenen Stop ein.")
         #expect(viewModel.isShowingCreateStop)
     }
 
@@ -693,6 +712,27 @@ struct TripFlowTests {
         #expect(viewModel.isShowingStopSuggestion == false)
         #expect(viewModel.stopSuggestionErrorMessage == nil)
         #expect(viewModel.stopSuggestionSuccessMessage == "Stop \"Hotel Check-in\" wurde aus der Reiseunterlage erstellt.")
+    }
+
+    @Test @MainActor func documentDetailRejectsStopSuggestionWithoutTitle() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Importierte Unterlage",
+            extractedText: "Check-in 15.07.2026 ab 14:30 Uhr",
+            for: trip
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+        let modelContext = try makeModelContext()
+        modelContext.insert(trip)
+        modelContext.insert(document)
+        viewModel.showStopSuggestion(from: document, calendar: testCalendar())
+        viewModel.stopSuggestionTitle = "   "
+
+        viewModel.createStopSuggestion(from: document, in: modelContext)
+
+        #expect(trip.stops.isEmpty)
+        #expect(viewModel.stopSuggestionErrorMessage == "Bitte gib einen Namen fuer den vorgeschlagenen Stop ein.")
+        #expect(viewModel.isShowingStopSuggestion)
     }
 
     @Test @MainActor func documentDetailClearsStopSuggestionSuccessWhenReviewStartsAgain() throws {

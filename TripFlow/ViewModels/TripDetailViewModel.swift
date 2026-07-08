@@ -231,7 +231,7 @@ final class TripDetailViewModel {
     func createStop(for trip: Trip, in modelContext: ModelContext) {
         do {
             guard isReviewingDocumentStopSuggestion == false || (newStopHasScheduledDate && newStopScheduledDate != nil) else {
-                stopErrorMessage = "Bitte pruefe Datum und Uhrzeit fuer den vorgeschlagenen Stop."
+                stopErrorMessage = "Bitte waehle ein Datum und eine Uhrzeit fuer den vorgeschlagenen Stop aus."
                 return
             }
 
@@ -266,7 +266,9 @@ final class TripDetailViewModel {
             stopSuggestionTrainNumber = ""
             stopSuggestionReservationNumber = ""
         } catch StopValidationError.emptyTitle {
-            stopErrorMessage = "Bitte gib einen Namen fuer den Stop ein."
+            stopErrorMessage = isReviewingDocumentStopSuggestion
+                ? "Bitte gib einen Namen fuer den vorgeschlagenen Stop ein."
+                : "Bitte gib einen Namen fuer den Stop ein."
         } catch StopValidationError.invalidCoordinates {
             stopErrorMessage = "Bitte gib gueltige Koordinaten ein."
         } catch {

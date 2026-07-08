@@ -147,7 +147,7 @@ final class TravelDocumentDetailViewModel {
         }
 
         guard let scheduledDate = stopSuggestionScheduledDate else {
-            stopSuggestionErrorMessage = "Bitte pruefe Datum und Uhrzeit fuer den vorgeschlagenen Stop."
+            stopSuggestionErrorMessage = "Bitte waehle ein Datum und eine Uhrzeit fuer den vorgeschlagenen Stop aus."
             return
         }
 
@@ -171,7 +171,7 @@ final class TravelDocumentDetailViewModel {
             stopSuggestionSuccessMessage = "Stop \"\(stop.title)\" wurde aus der Reiseunterlage erstellt."
             isShowingStopSuggestion = false
         } catch StopValidationError.emptyTitle {
-            stopSuggestionErrorMessage = "Bitte gib einen Namen fuer den Stop ein."
+            stopSuggestionErrorMessage = "Bitte gib einen Namen fuer den vorgeschlagenen Stop ein."
         } catch {
             stopSuggestionErrorMessage = "Der Stop konnte nicht erstellt werden."
         }

@@ -222,7 +222,7 @@ struct TripFlowTests {
         )
         let viewModel = TripDetailViewModel(trip: trip)
 
-        #expect(viewModel.documentSubtitle(for: document) == "Booking - hotel.pdf")
+        #expect(viewModel.documentSubtitle(for: document) == "Booking - hotel.pdf - OCR offen")
     }
 
     @Test func tripDetailDocumentSubtitleUsesParsedReferenceMetadata() throws {
@@ -238,7 +238,19 @@ struct TripFlowTests {
         )
         let viewModel = TripDetailViewModel(trip: trip)
 
-        #expect(viewModel.documentSubtitle(for: document) == "Flug - Flug LH2034 - Ref XYZ789")
+        #expect(viewModel.documentSubtitle(for: document) == "Flug - Flug LH2034 - Ref XYZ789 - OCR vorhanden")
+    }
+
+    @Test func tripDetailDocumentSubtitleShowsOCRStatusForExtractedText() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Hotel",
+            extractedText: "  Check-in 15.07.2026  ",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        #expect(viewModel.documentSubtitle(for: document) == "OCR vorhanden")
     }
 
     @Test func tripDetailPrefillsNewStopFromDocumentSchedule() throws {

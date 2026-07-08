@@ -172,6 +172,9 @@ final class TripDetailViewModel {
             details.append("Ref \(reservationNumber)")
         }
 
+        let hasExtractedText = document.extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        details.append(hasExtractedText ? "OCR vorhanden" : "OCR offen")
+
         return details.isEmpty ? nil : details.joined(separator: " - ")
     }
 

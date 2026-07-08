@@ -524,6 +524,15 @@ struct TripFlowTests {
         )
     }
 
+    @Test func tripDetailExplainsDisabledCreateDocumentWithoutTitle() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        viewModel.newDocumentTitle = "   "
+
+        #expect(viewModel.canCreateDocument == false)
+        #expect(viewModel.createDocumentDisabledReason == "Name fuer die Reiseunterlage fehlt.")
+    }
+
     @Test func tripDetailCancelsCreateDocumentCleanly() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let viewModel = TripDetailViewModel(trip: trip)

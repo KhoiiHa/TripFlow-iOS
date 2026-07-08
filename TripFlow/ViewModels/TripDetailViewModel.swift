@@ -63,7 +63,15 @@ final class TripDetailViewModel {
     }
 
     var canCreateDocument: Bool {
-        newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        createDocumentDisabledReason == nil
+    }
+
+    var createDocumentDisabledReason: String? {
+        if newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "Name fuer die Reiseunterlage fehlt."
+        }
+
+        return nil
     }
 
     var newDocumentExtractedTextHint: String {

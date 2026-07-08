@@ -455,6 +455,12 @@ struct TripDetailView: View {
                         .font(.footnote)
                         .foregroundStyle(.red)
                 }
+
+                if let createDocumentDisabledReason = viewModel.createDocumentDisabledReason {
+                    Text(createDocumentDisabledReason)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
             .navigationTitle("Neue Unterlage")
             .toolbar {

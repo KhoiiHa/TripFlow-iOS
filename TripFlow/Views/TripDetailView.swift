@@ -59,6 +59,12 @@ struct TripDetailView: View {
                     .foregroundStyle(.red)
             }
 
+            if let saveDisabledReason = viewModel.saveDisabledReason {
+                Text(saveDisabledReason)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
             if let stopSuccessMessage = viewModel.stopSuccessMessage {
                 Text(stopSuccessMessage)
                     .font(.footnote)

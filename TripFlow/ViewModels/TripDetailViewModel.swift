@@ -41,7 +41,23 @@ final class TripDetailViewModel {
     var documentErrorMessage: String?
 
     var canSave: Bool {
-        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        saveDisabledReason == nil
+    }
+
+    var saveDisabledReason: String? {
+        if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "Name fuer den Trip fehlt."
+        }
+
+        if hasStartDate,
+           hasEndDate,
+           let startDate,
+           let endDate,
+           endDate < startDate {
+            return "Enddatum darf nicht vor dem Startdatum liegen."
+        }
+
+        return nil
     }
 
     var canCreateStop: Bool {

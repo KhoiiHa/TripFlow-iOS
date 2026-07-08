@@ -93,6 +93,27 @@ struct TripFlowTests {
         }
     }
 
+    @Test func tripDetailExplainsDisabledSaveWithoutTitle() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        viewModel.title = "   "
+
+        #expect(viewModel.canSave == false)
+        #expect(viewModel.saveDisabledReason == "Name fuer den Trip fehlt.")
+    }
+
+    @Test func tripDetailExplainsDisabledSaveWithInvalidDateRange() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        viewModel.hasStartDate = true
+        viewModel.hasEndDate = true
+        viewModel.startDate = Date(timeIntervalSince1970: 2)
+        viewModel.endDate = Date(timeIntervalSince1970: 1)
+
+        #expect(viewModel.canSave == false)
+        #expect(viewModel.saveDisabledReason == "Enddatum darf nicht vor dem Startdatum liegen.")
+    }
+
     @Test func createTravelDocumentTrimsValuesAndAssignsTrip() throws {
         let trip = try tripService.createTrip(title: "Berlin")
 

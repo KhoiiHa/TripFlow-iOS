@@ -156,36 +156,10 @@ final class TripDetailViewModel {
     }
 
     func documentSubtitle(for document: TravelDocument) -> String? {
-        var details: [String] = []
-
-        if document.documentType.isEmpty == false {
-            details.append(document.documentType)
-        }
-
-        if document.fileName.isEmpty == false {
-            details.append(document.fileName)
-        }
-
         let parseResult = travelDocumentParserService.parse(document.extractedText)
-
-        if let flightNumber = parseResult.flightNumber {
-            details.append("Flug \(flightNumber)")
-        }
-
-        if let reservationNumber = parseResult.reservationNumber {
-            details.append("Ref \(reservationNumber)")
-        }
-
-        if let suggestedLocationName = parseResult.suggestedLocationName {
-            details.append("Ort \(suggestedLocationName)")
-        }
-
-        if let parsedDateText = Self.parsedDateText(from: parseResult) {
-            details.append(parsedDateText)
-        }
-
-        let hasExtractedText = document.extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-        details.append(hasExtractedText ? "OCR vorhanden" : "OCR offen")
+        let details = Self.documentBaseSubtitleParts(for: document)
+            + Self.documentParsedSubtitleParts(from: parseResult)
+            + [Self.ocrStatusText(for: document)]
 
         return details.isEmpty ? nil : details.joined(separator: " - ")
     }
@@ -367,6 +341,41 @@ final class TripDetailViewModel {
         }
 
         return String(trimmedText.prefix(120)) + "..."
+    }
+
+    private static func documentBaseSubtitleParts(for document: TravelDocument) -> [String] {
+        [
+            document.documentType,
+            document.fileName
+        ].filter { $0.isEmpty == false }
+    }
+
+    private static func documentParsedSubtitleParts(from parseResult: TravelDocumentParseResult) -> [String] {
+        var details: [String] = []
+
+        if let flightNumber = parseResult.flightNumber {
+            details.append("Flug \(flightNumber)")
+        }
+
+        if let reservationNumber = parseResult.reservationNumber {
+            details.append("Ref \(reservationNumber)")
+        }
+
+        if let suggestedLocationName = parseResult.suggestedLocationName {
+            details.append("Ort \(suggestedLocationName)")
+        }
+
+        if let parsedDateText = parsedDateText(from: parseResult) {
+            details.append(parsedDateText)
+        }
+
+        return details
+    }
+
+    private static func ocrStatusText(for document: TravelDocument) -> String {
+        let hasExtractedText = document.extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+
+        return hasExtractedText ? "OCR vorhanden" : "OCR offen"
     }
 
     private static func parsedDateText(from parseResult: TravelDocumentParseResult) -> String? {

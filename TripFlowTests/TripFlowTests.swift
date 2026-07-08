@@ -893,6 +893,7 @@ struct TripFlowTests {
         viewModel.documentType = "  Hotel  "
         viewModel.fileName = "  hotel.pdf  "
         viewModel.extractedText = "  Check-in 15:00  "
+        viewModel.errorMessage = "Alter Fehler"
 
         viewModel.save(document: document)
 

@@ -210,6 +210,8 @@ final class TravelDocumentDetailViewModel {
     }
 
     func save(document: TravelDocument) {
+        errorMessage = nil
+
         do {
             try travelDocumentService.updateDocument(
                 document,

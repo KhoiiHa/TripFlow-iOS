@@ -435,6 +435,29 @@ struct TripFlowTests {
         #expect(viewModel.isShowingCreateStop)
     }
 
+    @Test func tripDetailCancelsDocumentStopSuggestionCleanly() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Hotel Check-in",
+            documentType: "Hotel",
+            extractedText: "Check-in 15.07.2026 ab 14:30 Uhr Reservierung: ABC12345",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+        viewModel.showCreateStop(from: document, calendar: testCalendar())
+        viewModel.stopErrorMessage = "Fehler"
+
+        viewModel.cancelCreateStop()
+
+        #expect(viewModel.isShowingCreateStop == false)
+        #expect(viewModel.isReviewingDocumentStopSuggestion == false)
+        #expect(viewModel.newStopTitle == "")
+        #expect(viewModel.newStopScheduledDate == nil)
+        #expect(viewModel.stopSuggestionDocumentType == "")
+        #expect(viewModel.stopSuggestionReservationNumber == "")
+        #expect(viewModel.stopErrorMessage == nil)
+    }
+
     @Test @MainActor func tripDetailShowsSuccessAfterCreatingStopFromDocumentSuggestion() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let document = try travelDocumentService.createDocument(
@@ -758,6 +781,28 @@ struct TripFlowTests {
         viewModel.showStopSuggestion(from: document, calendar: testCalendar())
 
         #expect(viewModel.stopSuggestionSuccessMessage == nil)
+    }
+
+    @Test func documentDetailCancelsStopSuggestionCleanly() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Importierte Unterlage",
+            documentType: "Hotel",
+            extractedText: "Check-in 15.07.2026 ab 14:30 Uhr Reservierung: ABC12345",
+            for: trip
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+        viewModel.showStopSuggestion(from: document, calendar: testCalendar())
+        viewModel.stopSuggestionErrorMessage = "Fehler"
+
+        viewModel.cancelStopSuggestionReview()
+
+        #expect(viewModel.isShowingStopSuggestion == false)
+        #expect(viewModel.stopSuggestionTitle == "")
+        #expect(viewModel.stopSuggestionScheduledDate == nil)
+        #expect(viewModel.stopSuggestionDocumentType == "")
+        #expect(viewModel.stopSuggestionReservationNumber == "")
+        #expect(viewModel.stopSuggestionErrorMessage == nil)
     }
 
     @Test func documentDetailDoesNotShowScheduleForUnparsedText() {

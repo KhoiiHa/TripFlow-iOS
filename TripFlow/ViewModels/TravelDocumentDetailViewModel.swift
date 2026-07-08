@@ -151,6 +151,19 @@ final class TravelDocumentDetailViewModel {
         isShowingStopSuggestion = true
     }
 
+    func cancelStopSuggestionReview() {
+        stopSuggestionTitle = ""
+        stopSuggestionLocationName = ""
+        stopSuggestionScheduledDate = nil
+        stopSuggestionDocumentType = ""
+        stopSuggestionTextExcerpt = ""
+        stopSuggestionFlightNumber = ""
+        stopSuggestionTrainNumber = ""
+        stopSuggestionReservationNumber = ""
+        stopSuggestionErrorMessage = nil
+        isShowingStopSuggestion = false
+    }
+
     func createStopSuggestion(from document: TravelDocument, in modelContext: ModelContext) {
         guard let trip = document.trip else {
             stopSuggestionErrorMessage = "Der Stop konnte keinem Trip zugeordnet werden."

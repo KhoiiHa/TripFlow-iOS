@@ -182,8 +182,7 @@ struct TravelDocumentDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Abbrechen") {
-                        viewModel.isShowingStopSuggestion = false
-                        viewModel.stopSuggestionErrorMessage = nil
+                        viewModel.cancelStopSuggestionReview()
                     }
                 }
 

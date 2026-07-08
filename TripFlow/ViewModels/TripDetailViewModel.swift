@@ -228,6 +228,24 @@ final class TripDetailViewModel {
         }
     }
 
+    func cancelCreateStop() {
+        newStopTitle = ""
+        newStopLocationName = ""
+        newStopLatitudeText = ""
+        newStopLongitudeText = ""
+        newStopScheduledDate = nil
+        newStopHasScheduledDate = false
+        stopErrorMessage = nil
+        isResolvingNewStopCoordinates = false
+        isShowingCreateStop = false
+        isReviewingDocumentStopSuggestion = false
+        stopSuggestionDocumentType = ""
+        stopSuggestionTextExcerpt = ""
+        stopSuggestionFlightNumber = ""
+        stopSuggestionTrainNumber = ""
+        stopSuggestionReservationNumber = ""
+    }
+
     func showCreateDocument() {
         newDocumentTitle = ""
         newDocumentType = ""

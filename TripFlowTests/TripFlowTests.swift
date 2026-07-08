@@ -225,6 +225,22 @@ struct TripFlowTests {
         #expect(viewModel.documentSubtitle(for: document) == "Booking - hotel.pdf")
     }
 
+    @Test func tripDetailDocumentSubtitleUsesParsedReferenceMetadata() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Boarding Pass",
+            documentType: "Flug",
+            extractedText: """
+            Boarding LH 2034 Gate A12 05/08/26 09:05
+            Buchungsnummer: XYZ789
+            """,
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        #expect(viewModel.documentSubtitle(for: document) == "Flug - Flug LH2034 - Ref XYZ789")
+    }
+
     @Test func tripDetailPrefillsNewStopFromDocumentSchedule() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let document = try travelDocumentService.createDocument(

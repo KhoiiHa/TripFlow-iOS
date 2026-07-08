@@ -162,6 +162,16 @@ final class TripDetailViewModel {
             details.append(document.fileName)
         }
 
+        let parseResult = travelDocumentParserService.parse(document.extractedText)
+
+        if let flightNumber = parseResult.flightNumber {
+            details.append("Flug \(flightNumber)")
+        }
+
+        if let reservationNumber = parseResult.reservationNumber {
+            details.append("Ref \(reservationNumber)")
+        }
+
         return details.isEmpty ? nil : details.joined(separator: " - ")
     }
 

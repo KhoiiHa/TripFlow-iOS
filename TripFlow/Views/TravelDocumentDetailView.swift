@@ -103,7 +103,9 @@ struct TravelDocumentDetailView: View {
                 }
 
                 if viewModel.stopSuggestionTextExcerpt.isEmpty == false
-                    || viewModel.stopSuggestionDocumentType.isEmpty == false {
+                    || viewModel.stopSuggestionDocumentType.isEmpty == false
+                    || viewModel.stopSuggestionFlightNumber.isEmpty == false
+                    || viewModel.stopSuggestionReservationNumber.isEmpty == false {
                     Section("Quelle") {
                         if viewModel.stopSuggestionTextExcerpt.isEmpty == false {
                             LabeledContent("Textausschnitt", value: viewModel.stopSuggestionTextExcerpt)
@@ -111,6 +113,14 @@ struct TravelDocumentDetailView: View {
 
                         if viewModel.stopSuggestionDocumentType.isEmpty == false {
                             LabeledContent("Dokumenttyp", value: viewModel.stopSuggestionDocumentType)
+                        }
+
+                        if viewModel.stopSuggestionFlightNumber.isEmpty == false {
+                            LabeledContent("Flugnummer", value: viewModel.stopSuggestionFlightNumber)
+                        }
+
+                        if viewModel.stopSuggestionReservationNumber.isEmpty == false {
+                            LabeledContent("Reservierungsnummer", value: viewModel.stopSuggestionReservationNumber)
                         }
                     }
                 }

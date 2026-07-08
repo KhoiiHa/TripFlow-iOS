@@ -30,6 +30,8 @@ final class TripDetailViewModel {
     var isReviewingDocumentStopSuggestion = false
     var stopSuggestionDocumentType = ""
     var stopSuggestionTextExcerpt = ""
+    var stopSuggestionFlightNumber = ""
+    var stopSuggestionReservationNumber = ""
     var newDocumentTitle = ""
     var newDocumentType = ""
     var newDocumentFileName = ""
@@ -188,6 +190,8 @@ final class TripDetailViewModel {
         isReviewingDocumentStopSuggestion = false
         stopSuggestionDocumentType = ""
         stopSuggestionTextExcerpt = ""
+        stopSuggestionFlightNumber = ""
+        stopSuggestionReservationNumber = ""
         isShowingCreateStop = true
     }
 
@@ -199,6 +203,8 @@ final class TripDetailViewModel {
         isReviewingDocumentStopSuggestion = true
         stopSuggestionDocumentType = document.documentType
         stopSuggestionTextExcerpt = Self.textExcerpt(from: document.extractedText)
+        stopSuggestionFlightNumber = parseResult.flightNumber ?? ""
+        stopSuggestionReservationNumber = parseResult.reservationNumber ?? ""
 
         if let scheduledDate = parseResult.scheduledDate {
             newStopScheduledDate = scheduledDate
@@ -252,6 +258,8 @@ final class TripDetailViewModel {
             isReviewingDocumentStopSuggestion = false
             stopSuggestionDocumentType = ""
             stopSuggestionTextExcerpt = ""
+            stopSuggestionFlightNumber = ""
+            stopSuggestionReservationNumber = ""
         } catch StopValidationError.emptyTitle {
             stopErrorMessage = "Bitte gib einen Namen fuer den Stop ein."
         } catch StopValidationError.invalidCoordinates {

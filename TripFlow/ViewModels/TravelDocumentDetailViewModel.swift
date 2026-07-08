@@ -21,6 +21,8 @@ final class TravelDocumentDetailViewModel {
     var stopSuggestionScheduledDate: Date?
     var stopSuggestionDocumentType = ""
     var stopSuggestionTextExcerpt = ""
+    var stopSuggestionFlightNumber = ""
+    var stopSuggestionReservationNumber = ""
     var stopSuggestionErrorMessage: String?
     var stopSuggestionSuccessMessage: String?
 
@@ -108,6 +110,8 @@ final class TravelDocumentDetailViewModel {
         stopSuggestionScheduledDate = result.scheduledDate
         stopSuggestionDocumentType = document.documentType
         stopSuggestionTextExcerpt = Self.textExcerpt(from: document.extractedText)
+        stopSuggestionFlightNumber = result.flightNumber ?? ""
+        stopSuggestionReservationNumber = result.reservationNumber ?? ""
         stopSuggestionErrorMessage = nil
         stopSuggestionSuccessMessage = nil
         isShowingStopSuggestion = true
@@ -137,6 +141,8 @@ final class TravelDocumentDetailViewModel {
             stopSuggestionScheduledDate = nil
             stopSuggestionDocumentType = ""
             stopSuggestionTextExcerpt = ""
+            stopSuggestionFlightNumber = ""
+            stopSuggestionReservationNumber = ""
             stopSuggestionErrorMessage = nil
             stopSuggestionSuccessMessage = "Stop \"\(stop.title)\" wurde erstellt."
             isShowingStopSuggestion = false

@@ -323,6 +323,14 @@ struct TripDetailView: View {
                         if viewModel.stopSuggestionDocumentType.isEmpty == false {
                             LabeledContent("Dokumenttyp", value: viewModel.stopSuggestionDocumentType)
                         }
+
+                        if viewModel.stopSuggestionFlightNumber.isEmpty == false {
+                            LabeledContent("Flugnummer", value: viewModel.stopSuggestionFlightNumber)
+                        }
+
+                        if viewModel.stopSuggestionReservationNumber.isEmpty == false {
+                            LabeledContent("Reservierungsnummer", value: viewModel.stopSuggestionReservationNumber)
+                        }
                     }
                 }
 

@@ -233,6 +233,7 @@ struct TripFlowTests {
             extractedText: """
             Check-in 15.07.2026 ab 14:30 Uhr
             Adresse: Alexanderplatz 1, Berlin
+            Reservierung: ABC12345
             """,
             for: trip
         )
@@ -247,7 +248,22 @@ struct TripFlowTests {
         #expect(viewModel.isShowingCreateStop)
         #expect(viewModel.isReviewingDocumentStopSuggestion)
         #expect(viewModel.stopSuggestionDocumentType == "Hotel")
-        #expect(viewModel.stopSuggestionTextExcerpt == "Check-in 15.07.2026 ab 14:30 Uhr\nAdresse: Alexanderplatz 1, Berlin")
+        #expect(viewModel.stopSuggestionTextExcerpt == "Check-in 15.07.2026 ab 14:30 Uhr\nAdresse: Alexanderplatz 1, Berlin\nReservierung: ABC12345")
+        #expect(viewModel.stopSuggestionReservationNumber == "ABC12345")
+    }
+
+    @Test func tripDetailPrefillsDocumentFlightNumberForStopReview() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Boarding Pass",
+            extractedText: "Boarding LH 2034 Gate A12 05/08/26 09:05",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        viewModel.showCreateStop(from: document, calendar: testCalendar())
+
+        #expect(viewModel.stopSuggestionFlightNumber == "LH2034")
     }
 
     @Test func tripDetailKeepsNewStopScheduleOffForUnparsedDocument() throws {
@@ -434,8 +450,8 @@ struct TripFlowTests {
         let document = try travelDocumentService.createDocument(
             title: "Importierte Unterlage",
             extractedText: """
-            Check-in 15.07.2026 ab 14:30 Uhr
-            Adresse: Alexanderplatz 1, Berlin
+            Boarding LH 2034 Gate A12 05/08/26 09:05
+            Buchungsnummer: XYZ789
             """,
             for: trip
         )
@@ -444,11 +460,13 @@ struct TripFlowTests {
         viewModel.showStopSuggestion(from: document, calendar: testCalendar())
 
         #expect(viewModel.isShowingStopSuggestion)
-        #expect(viewModel.stopSuggestionTitle == "Hotel Check-in")
-        #expect(viewModel.stopSuggestionLocationName == "Alexanderplatz 1, Berlin")
-        #expect(viewModel.stopSuggestionScheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: testCalendar()))
+        #expect(viewModel.stopSuggestionTitle == "Flug")
+        #expect(viewModel.stopSuggestionLocationName == "")
+        #expect(viewModel.stopSuggestionScheduledDate == makeDate(year: 2026, month: 8, day: 5, hour: 9, minute: 5, calendar: testCalendar()))
         #expect(viewModel.stopSuggestionDocumentType == "")
-        #expect(viewModel.stopSuggestionTextExcerpt == "Check-in 15.07.2026 ab 14:30 Uhr\nAdresse: Alexanderplatz 1, Berlin")
+        #expect(viewModel.stopSuggestionTextExcerpt == "Boarding LH 2034 Gate A12 05/08/26 09:05\nBuchungsnummer: XYZ789")
+        #expect(viewModel.stopSuggestionFlightNumber == "LH2034")
+        #expect(viewModel.stopSuggestionReservationNumber == "XYZ789")
         #expect(viewModel.canCreateStopSuggestion)
     }
 

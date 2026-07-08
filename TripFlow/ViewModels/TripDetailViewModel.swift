@@ -90,6 +90,24 @@ final class TripDetailViewModel {
         return nil
     }
 
+    var canFillNewStopCoordinatesFromLocationName: Bool {
+        newStopCoordinateLookupDisabledReason == nil
+    }
+
+    var newStopCoordinateLookupDisabledReason: String? {
+        if isResolvingNewStopCoordinates {
+            return "Koordinaten werden gesucht."
+        }
+
+        if newStopLocationName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return isReviewingDocumentStopSuggestion
+                ? "Erkannter Ort fuer die Koordinatensuche fehlt."
+                : "Ort fuer die Koordinatensuche fehlt."
+        }
+
+        return nil
+    }
+
     var newDocumentExtractedTextHint: String {
         "Eingefuegter OCR-Text wird nach dem Speichern fuer erkannte Reisedaten und Stop-Vorschlaege genutzt."
     }

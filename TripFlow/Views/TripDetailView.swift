@@ -380,7 +380,13 @@ struct TripDetailView: View {
                             systemImage: "location"
                         )
                     }
-                    .disabled(viewModel.newStopLocationName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isResolvingNewStopCoordinates)
+                    .disabled(viewModel.canFillNewStopCoordinatesFromLocationName == false)
+
+                    if let newStopCoordinateLookupDisabledReason = viewModel.newStopCoordinateLookupDisabledReason {
+                        Text(newStopCoordinateLookupDisabledReason)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Section("Zeitpunkt") {

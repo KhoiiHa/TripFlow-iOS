@@ -37,7 +37,13 @@ struct StopDetailView: View {
                 } label: {
                     Label("Aus Ort setzen", systemImage: "location")
                 }
-                .disabled(viewModel.locationName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isResolvingCoordinates)
+                .disabled(viewModel.canFillCoordinatesFromLocationName == false)
+
+                if let coordinateLookupDisabledReason = viewModel.coordinateLookupDisabledReason {
+                    Text(coordinateLookupDisabledReason)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Section("Zeitpunkt") {

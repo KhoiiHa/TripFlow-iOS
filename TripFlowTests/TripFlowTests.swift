@@ -1228,6 +1228,32 @@ struct TripFlowTests {
         #expect(viewModel.stopErrorMessage == nil)
     }
 
+    @Test func tripDetailExplainsDisabledNewStopCoordinateLookupWithoutLocation() {
+        let viewModel = TripDetailViewModel(trip: Trip(title: "Berlin"))
+        viewModel.newStopLocationName = "   "
+
+        #expect(viewModel.canFillNewStopCoordinatesFromLocationName == false)
+        #expect(viewModel.newStopCoordinateLookupDisabledReason == "Ort fuer die Koordinatensuche fehlt.")
+    }
+
+    @Test func tripDetailExplainsDisabledDocumentStopCoordinateLookupWithoutRecognizedLocation() {
+        let viewModel = TripDetailViewModel(trip: Trip(title: "Berlin"))
+        viewModel.isReviewingDocumentStopSuggestion = true
+        viewModel.newStopLocationName = "   "
+
+        #expect(viewModel.canFillNewStopCoordinatesFromLocationName == false)
+        #expect(viewModel.newStopCoordinateLookupDisabledReason == "Erkannter Ort fuer die Koordinatensuche fehlt.")
+    }
+
+    @Test func tripDetailExplainsDisabledNewStopCoordinateLookupWhileResolving() {
+        let viewModel = TripDetailViewModel(trip: Trip(title: "Berlin"))
+        viewModel.newStopLocationName = "Berlin"
+        viewModel.isResolvingNewStopCoordinates = true
+
+        #expect(viewModel.canFillNewStopCoordinatesFromLocationName == false)
+        #expect(viewModel.newStopCoordinateLookupDisabledReason == "Koordinaten werden gesucht.")
+    }
+
     @Test @MainActor func stopDetailGeocodingFillsCoordinates() async {
         let stop = Stop(title: "Hotel", locationName: "Berlin")
         let viewModel = StopDetailViewModel(
@@ -1242,6 +1268,22 @@ struct TripFlowTests {
         #expect(viewModel.latitudeText == "52.52")
         #expect(viewModel.longitudeText == "13.405")
         #expect(viewModel.errorMessage == nil)
+    }
+
+    @Test func stopDetailExplainsDisabledCoordinateLookupWithoutLocation() {
+        let viewModel = StopDetailViewModel(stop: Stop(title: "Hotel"))
+        viewModel.locationName = "   "
+
+        #expect(viewModel.canFillCoordinatesFromLocationName == false)
+        #expect(viewModel.coordinateLookupDisabledReason == "Ort fuer die Koordinatensuche fehlt.")
+    }
+
+    @Test func stopDetailExplainsDisabledCoordinateLookupWhileResolving() {
+        let viewModel = StopDetailViewModel(stop: Stop(title: "Hotel", locationName: "Berlin"))
+        viewModel.isResolvingCoordinates = true
+
+        #expect(viewModel.canFillCoordinatesFromLocationName == false)
+        #expect(viewModel.coordinateLookupDisabledReason == "Koordinaten werden gesucht.")
     }
 
     @Test @MainActor func stopDetailGeocodingShowsNotFoundError() async {

@@ -30,6 +30,22 @@ final class StopDetailViewModel {
         return nil
     }
 
+    var canFillCoordinatesFromLocationName: Bool {
+        coordinateLookupDisabledReason == nil
+    }
+
+    var coordinateLookupDisabledReason: String? {
+        if isResolvingCoordinates {
+            return "Koordinaten werden gesucht."
+        }
+
+        if locationName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "Ort fuer die Koordinatensuche fehlt."
+        }
+
+        return nil
+    }
+
     private let stopService: StopService
     private let geocodingService: any LocationGeocoding
 

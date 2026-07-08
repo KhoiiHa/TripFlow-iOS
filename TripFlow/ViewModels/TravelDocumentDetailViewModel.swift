@@ -168,7 +168,7 @@ final class TravelDocumentDetailViewModel {
             stopSuggestionTrainNumber = ""
             stopSuggestionReservationNumber = ""
             stopSuggestionErrorMessage = nil
-            stopSuggestionSuccessMessage = "Stop \"\(stop.title)\" wurde erstellt."
+            stopSuggestionSuccessMessage = "Stop \"\(stop.title)\" wurde aus der Reiseunterlage erstellt."
             isShowingStopSuggestion = false
         } catch StopValidationError.emptyTitle {
             stopSuggestionErrorMessage = "Bitte gib einen Namen fuer den Stop ein."

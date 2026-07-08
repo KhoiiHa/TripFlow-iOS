@@ -255,7 +255,9 @@ final class TripDetailViewModel {
             newStopScheduledDate = nil
             newStopHasScheduledDate = false
             stopErrorMessage = nil
-            stopSuccessMessage = "Stop \"\(stop.title)\" wurde erstellt."
+            stopSuccessMessage = isReviewingDocumentStopSuggestion
+                ? "Stop \"\(stop.title)\" wurde aus der Reiseunterlage erstellt."
+                : "Stop \"\(stop.title)\" wurde erstellt."
             isShowingCreateStop = false
             isReviewingDocumentStopSuggestion = false
             stopSuggestionDocumentType = ""

@@ -426,7 +426,7 @@ struct TripFlowTests {
 
         viewModel.createStop(for: trip, in: modelContext)
 
-        #expect(viewModel.stopSuccessMessage == "Stop \"Hotel Check-in\" wurde erstellt.")
+        #expect(viewModel.stopSuccessMessage == "Stop \"Hotel Check-in\" wurde aus der Reiseunterlage erstellt.")
         #expect(viewModel.stopErrorMessage == nil)
         #expect(viewModel.isShowingCreateStop == false)
     }
@@ -692,7 +692,7 @@ struct TripFlowTests {
         #expect(trip.stops.first?.scheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: testCalendar()))
         #expect(viewModel.isShowingStopSuggestion == false)
         #expect(viewModel.stopSuggestionErrorMessage == nil)
-        #expect(viewModel.stopSuggestionSuccessMessage == "Stop \"Hotel Check-in\" wurde erstellt.")
+        #expect(viewModel.stopSuggestionSuccessMessage == "Stop \"Hotel Check-in\" wurde aus der Reiseunterlage erstellt.")
     }
 
     @Test @MainActor func documentDetailClearsStopSuggestionSuccessWhenReviewStartsAgain() throws {

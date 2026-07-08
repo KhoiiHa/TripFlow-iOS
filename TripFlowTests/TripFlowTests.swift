@@ -882,6 +882,15 @@ struct TripFlowTests {
         #expect(viewModel.errorMessage == nil)
     }
 
+    @Test func documentDetailExplainsDisabledSaveWithoutTitle() {
+        let document = TravelDocument(title: "Hotel")
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+        viewModel.title = "   "
+
+        #expect(viewModel.canSave == false)
+        #expect(viewModel.saveDisabledReason == "Name fuer die Reiseunterlage fehlt.")
+    }
+
     @Test func documentDetailSaveRejectsEmptyTitle() {
         let document = TravelDocument(title: "Hotel")
         let viewModel = TravelDocumentDetailViewModel(document: document)

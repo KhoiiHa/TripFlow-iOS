@@ -28,7 +28,15 @@ final class TravelDocumentDetailViewModel {
     var stopSuggestionSuccessMessage: String?
 
     var canSave: Bool {
-        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        saveDisabledReason == nil
+    }
+
+    var saveDisabledReason: String? {
+        if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "Name fuer die Reiseunterlage fehlt."
+        }
+
+        return nil
     }
 
     var canCreateStopSuggestion: Bool {

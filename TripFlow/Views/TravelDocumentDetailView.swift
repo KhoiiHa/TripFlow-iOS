@@ -90,6 +90,12 @@ struct TravelDocumentDetailView: View {
                     .font(.footnote)
                     .foregroundStyle(.red)
             }
+
+            if let saveDisabledReason = viewModel.saveDisabledReason {
+                Text(saveDisabledReason)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
         .navigationTitle(document.title)
         .toolbar {

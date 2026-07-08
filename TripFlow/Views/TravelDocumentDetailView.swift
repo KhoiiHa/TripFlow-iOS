@@ -29,6 +29,12 @@ struct TravelDocumentDetailView: View {
             Section("Text") {
                 TextEditor(text: $viewModel.extractedText)
                     .frame(minHeight: 180)
+
+                if viewModel.hasExtractedText == false {
+                    Text("Noch kein OCR-Text vorhanden.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             if viewModel.hasParsedTravelData() {

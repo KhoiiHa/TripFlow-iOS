@@ -473,6 +473,17 @@ struct TripFlowTests {
         #expect(viewModel.parsedReservationNumber(calendar: testCalendar()) == "XYZ789")
     }
 
+    @Test func documentDetailReportsEmptyExtractedTextState() {
+        let document = TravelDocument(title: "Hotel", extractedText: "   ")
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        #expect(viewModel.hasExtractedText == false)
+
+        viewModel.extractedText = "  Check-in 15:00  "
+
+        #expect(viewModel.hasExtractedText)
+    }
+
     @Test func documentDetailPreparesStopSuggestionFromParsedData() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let document = try travelDocumentService.createDocument(

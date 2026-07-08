@@ -35,6 +35,10 @@ final class TravelDocumentDetailViewModel {
             && stopSuggestionScheduledDate != nil
     }
 
+    var hasExtractedText: Bool {
+        extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
+
     private let travelDocumentService: TravelDocumentService
     private let travelDocumentParserService: TravelDocumentParserService
     private let stopService: StopService

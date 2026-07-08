@@ -385,6 +385,16 @@ struct TripFlowTests {
         #expect(viewModel.isShowingCreateDocument == false)
     }
 
+    @Test func tripDetailExplainsDocumentTextUsage() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        #expect(
+            viewModel.newDocumentExtractedTextHint
+                == "Eingefuegter OCR-Text wird nach dem Speichern fuer erkannte Reisedaten und Stop-Vorschlaege genutzt."
+        )
+    }
+
     @Test @MainActor func tripDetailRejectsDocumentWithoutTitle() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let viewModel = TripDetailViewModel(trip: trip)

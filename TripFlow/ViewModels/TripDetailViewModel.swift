@@ -51,6 +51,10 @@ final class TripDetailViewModel {
         newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
 
+    var newDocumentExtractedTextHint: String {
+        "Eingefuegter OCR-Text wird nach dem Speichern fuer erkannte Reisedaten und Stop-Vorschlaege genutzt."
+    }
+
     private let tripService: TripService
     private let stopService: StopService
     private let travelDocumentService: TravelDocumentService

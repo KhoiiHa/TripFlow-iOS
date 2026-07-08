@@ -420,6 +420,10 @@ struct TripDetailView: View {
                 Section("Text") {
                     TextEditor(text: $viewModel.newDocumentExtractedText)
                         .frame(minHeight: 120)
+
+                    Text(viewModel.newDocumentExtractedTextHint)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
 
                 if let documentErrorMessage = viewModel.documentErrorMessage {

@@ -426,6 +426,26 @@ struct TripFlowTests {
         #expect(trip.stops.first?.scheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: testCalendar()))
         #expect(viewModel.isShowingStopSuggestion == false)
         #expect(viewModel.stopSuggestionErrorMessage == nil)
+        #expect(viewModel.stopSuggestionSuccessMessage == "Stop \"Hotel Check-in\" wurde erstellt.")
+    }
+
+    @Test @MainActor func documentDetailClearsStopSuggestionSuccessWhenReviewStartsAgain() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Importierte Unterlage",
+            extractedText: "Check-in 15.07.2026 ab 14:30 Uhr",
+            for: trip
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+        let modelContext = try makeModelContext()
+        modelContext.insert(trip)
+        modelContext.insert(document)
+        viewModel.showStopSuggestion(from: document, calendar: testCalendar())
+        viewModel.createStopSuggestion(from: document, in: modelContext)
+
+        viewModel.showStopSuggestion(from: document, calendar: testCalendar())
+
+        #expect(viewModel.stopSuggestionSuccessMessage == nil)
     }
 
     @Test func documentDetailDoesNotShowScheduleForUnparsedText() {

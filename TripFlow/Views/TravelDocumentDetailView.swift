@@ -55,6 +55,12 @@ struct TravelDocumentDetailView: View {
                 }
             }
 
+            if let stopSuggestionSuccessMessage = viewModel.stopSuggestionSuccessMessage {
+                Text(stopSuggestionSuccessMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.green)
+            }
+
             if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)
                     .font(.footnote)

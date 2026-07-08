@@ -22,6 +22,7 @@ final class TravelDocumentDetailViewModel {
     var stopSuggestionDocumentType = ""
     var stopSuggestionTextExcerpt = ""
     var stopSuggestionErrorMessage: String?
+    var stopSuggestionSuccessMessage: String?
 
     var canSave: Bool {
         title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
@@ -98,6 +99,7 @@ final class TravelDocumentDetailViewModel {
         stopSuggestionDocumentType = document.documentType
         stopSuggestionTextExcerpt = Self.textExcerpt(from: document.extractedText)
         stopSuggestionErrorMessage = nil
+        stopSuggestionSuccessMessage = nil
         isShowingStopSuggestion = true
     }
 
@@ -126,6 +128,7 @@ final class TravelDocumentDetailViewModel {
             stopSuggestionDocumentType = ""
             stopSuggestionTextExcerpt = ""
             stopSuggestionErrorMessage = nil
+            stopSuggestionSuccessMessage = "Stop \"\(stop.title)\" wurde erstellt."
             isShowingStopSuggestion = false
         } catch StopValidationError.emptyTitle {
             stopSuggestionErrorMessage = "Bitte gib einen Namen fuer den Stop ein."

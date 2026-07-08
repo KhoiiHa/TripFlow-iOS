@@ -176,6 +176,12 @@ struct TripFlowTests {
         #expect(result.trainNumber == "ICE100")
     }
 
+    @Test func parserSuggestsTrainStopTitleWithTrainNumber() {
+        let result = travelDocumentParserService.parse("Bahn ICE 100 Berlin Hbf 15.07.2026 08:30")
+
+        #expect(result.suggestedStopTitle == "Bahnfahrt ICE100")
+    }
+
     @Test func parserExtractsReservationNumberFromLabeledLine() {
         let result = travelDocumentParserService.parse(
             """
@@ -351,6 +357,7 @@ struct TripFlowTests {
 
         viewModel.showCreateStop(from: document, calendar: testCalendar())
 
+        #expect(viewModel.newStopTitle == "Bahnfahrt ICE100")
         #expect(viewModel.stopSuggestionTrainNumber == "ICE100")
     }
 

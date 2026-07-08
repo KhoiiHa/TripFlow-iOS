@@ -25,6 +25,7 @@ final class TripDetailViewModel {
     var newStopHasScheduledDate = false
     var isShowingCreateStop = false
     var stopErrorMessage: String?
+    var stopSuccessMessage: String?
     var isResolvingNewStopCoordinates = false
     var isReviewingDocumentStopSuggestion = false
     var stopSuggestionDocumentType = ""
@@ -182,6 +183,7 @@ final class TripDetailViewModel {
         newStopScheduledDate = startDate ?? Date()
         newStopHasScheduledDate = false
         stopErrorMessage = nil
+        stopSuccessMessage = nil
         isResolvingNewStopCoordinates = false
         isReviewingDocumentStopSuggestion = false
         stopSuggestionDocumentType = ""
@@ -245,6 +247,7 @@ final class TripDetailViewModel {
             newStopScheduledDate = nil
             newStopHasScheduledDate = false
             stopErrorMessage = nil
+            stopSuccessMessage = "Stop \"\(stop.title)\" wurde erstellt."
             isShowingCreateStop = false
             isReviewingDocumentStopSuggestion = false
             stopSuggestionDocumentType = ""

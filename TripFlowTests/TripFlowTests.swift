@@ -268,6 +268,37 @@ struct TripFlowTests {
         #expect(viewModel.isShowingCreateStop)
     }
 
+    @Test @MainActor func tripDetailShowsSuccessAfterCreatingStopFromDocumentSuggestion() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Hotel Check-in",
+            extractedText: "Check-in 15.07.2026 ab 14:30 Uhr",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+        let modelContext = try makeModelContext()
+        viewModel.showCreateStop(from: document, calendar: testCalendar())
+
+        viewModel.createStop(for: trip, in: modelContext)
+
+        #expect(viewModel.stopSuccessMessage == "Stop \"Hotel Check-in\" wurde erstellt.")
+        #expect(viewModel.stopErrorMessage == nil)
+        #expect(viewModel.isShowingCreateStop == false)
+    }
+
+    @Test @MainActor func tripDetailClearsStopSuccessWhenCreateStopStartsAgain() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        let modelContext = try makeModelContext()
+        viewModel.showCreateStop()
+        viewModel.newStopTitle = "Hotel"
+
+        viewModel.createStop(for: trip, in: modelContext)
+        viewModel.showCreateStop()
+
+        #expect(viewModel.stopSuccessMessage == nil)
+    }
+
     @Test @MainActor func tripDetailCreatesDocumentFromSheetState() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let viewModel = TripDetailViewModel(trip: trip)

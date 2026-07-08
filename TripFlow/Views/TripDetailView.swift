@@ -59,6 +59,12 @@ struct TripDetailView: View {
                     .foregroundStyle(.red)
             }
 
+            if let stopSuccessMessage = viewModel.stopSuccessMessage {
+                Text(stopSuccessMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.green)
+            }
+
             timelineSection
             mapSection
             documentsSection

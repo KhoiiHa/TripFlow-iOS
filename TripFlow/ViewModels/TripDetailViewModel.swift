@@ -45,7 +45,21 @@ final class TripDetailViewModel {
     }
 
     var canCreateStop: Bool {
-        newStopTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        createStopDisabledReason == nil
+    }
+
+    var createStopDisabledReason: String? {
+        if newStopTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return isReviewingDocumentStopSuggestion
+                ? "Name fuer den vorgeschlagenen Stop fehlt."
+                : "Name fuer den Stop fehlt."
+        }
+
+        if isReviewingDocumentStopSuggestion && (newStopHasScheduledDate == false || newStopScheduledDate == nil) {
+            return "Datum und Uhrzeit fuer den vorgeschlagenen Stop fehlen."
+        }
+
+        return nil
     }
 
     var canCreateDocument: Bool {

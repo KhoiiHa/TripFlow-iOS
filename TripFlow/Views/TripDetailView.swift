@@ -405,6 +405,13 @@ struct TripDetailView: View {
                         .font(.footnote)
                         .foregroundStyle(.red)
                 }
+
+                if viewModel.isReviewingDocumentStopSuggestion,
+                   let createStopDisabledReason = viewModel.createStopDisabledReason {
+                    Text(createStopDisabledReason)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
             .navigationTitle("Neuer Stop")
             .toolbar {

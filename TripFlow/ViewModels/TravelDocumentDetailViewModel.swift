@@ -32,8 +32,19 @@ final class TravelDocumentDetailViewModel {
     }
 
     var canCreateStopSuggestion: Bool {
-        stopSuggestionTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-            && stopSuggestionScheduledDate != nil
+        createStopSuggestionDisabledReason == nil
+    }
+
+    var createStopSuggestionDisabledReason: String? {
+        if stopSuggestionTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "Name fuer den vorgeschlagenen Stop fehlt."
+        }
+
+        if stopSuggestionScheduledDate == nil {
+            return "Datum und Uhrzeit fuer den vorgeschlagenen Stop fehlen."
+        }
+
+        return nil
     }
 
     var hasExtractedText: Bool {

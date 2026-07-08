@@ -406,6 +406,9 @@ struct TripFlowTests {
         viewModel.showCreateStop(from: document, calendar: testCalendar())
         viewModel.newStopScheduledDate = nil
 
+        #expect(viewModel.canCreateStop == false)
+        #expect(viewModel.createStopDisabledReason == "Datum und Uhrzeit fuer den vorgeschlagenen Stop fehlen.")
+
         viewModel.createStop(for: trip, in: modelContext)
 
         #expect(trip.stops.isEmpty)
@@ -727,6 +730,9 @@ struct TripFlowTests {
         modelContext.insert(document)
         viewModel.showStopSuggestion(from: document, calendar: testCalendar())
         viewModel.stopSuggestionTitle = "   "
+
+        #expect(viewModel.canCreateStopSuggestion == false)
+        #expect(viewModel.createStopSuggestionDisabledReason == "Name fuer den vorgeschlagenen Stop fehlt.")
 
         viewModel.createStopSuggestion(from: document, in: modelContext)
 

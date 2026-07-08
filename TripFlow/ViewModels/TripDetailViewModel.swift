@@ -357,6 +357,10 @@ final class TripDetailViewModel {
             details.append("Flug \(flightNumber)")
         }
 
+        if let trainNumber = parseResult.trainNumber {
+            details.append("Zug \(trainNumber)")
+        }
+
         if let reservationNumber = parseResult.reservationNumber {
             details.append("Ref \(reservationNumber)")
         }

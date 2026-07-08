@@ -25,6 +25,7 @@ struct TravelDocumentParseResult: Equatable {
     let suggestedStopTitle: String?
     let suggestedLocationName: String?
     let flightNumber: String?
+    let trainNumber: String?
     let reservationNumber: String?
 }
 
@@ -36,6 +37,7 @@ struct TravelDocumentParserService {
         let suggestedStopTitle = parseSuggestedStopTitle(in: text)
         let suggestedLocationName = parseSuggestedLocationName(in: text)
         let flightNumber = parseFlightNumber(in: text)
+        let trainNumber = parseTrainNumber(in: text)
         let reservationNumber = parseReservationNumber(in: text)
 
         return TravelDocumentParseResult(
@@ -45,6 +47,7 @@ struct TravelDocumentParserService {
             suggestedStopTitle: suggestedStopTitle,
             suggestedLocationName: suggestedLocationName,
             flightNumber: flightNumber,
+            trainNumber: trainNumber,
             reservationNumber: reservationNumber
         )
     }
@@ -187,6 +190,29 @@ struct TravelDocumentParserService {
 
             if let match = uppercasedLine.firstMatch(of: regex) {
                 return String(match.flight).replacingOccurrences(of: " ", with: "")
+            }
+        }
+
+        return nil
+    }
+
+    private func parseTrainNumber(in text: String) -> String? {
+        let regex = #/(?<train>(?:ICE|IC|EC|RE|RB|S)\s?\d{1,4})/#
+
+        for line in text.split(whereSeparator: \.isNewline) {
+            let uppercasedLine = String(line).uppercased()
+
+            guard uppercasedLine.contains("BAHN")
+                    || uppercasedLine.contains("ZUG")
+                    || uppercasedLine.contains("TRAIN")
+                    || uppercasedLine.contains("ICE")
+                    || uppercasedLine.contains("IC")
+                    || uppercasedLine.contains("EC") else {
+                continue
+            }
+
+            if let match = uppercasedLine.firstMatch(of: regex) {
+                return String(match.train).replacingOccurrences(of: " ", with: "")
             }
         }
 

@@ -170,6 +170,12 @@ struct TripFlowTests {
         #expect(result.flightNumber == "LH2034")
     }
 
+    @Test func parserExtractsTrainNumberFromRailText() {
+        let result = travelDocumentParserService.parse("Bahn ICE 100 Berlin Hbf 15.07.2026 08:30")
+
+        #expect(result.trainNumber == "ICE100")
+    }
+
     @Test func parserExtractsReservationNumberFromLabeledLine() {
         let result = travelDocumentParserService.parse(
             """
@@ -278,6 +284,19 @@ struct TripFlowTests {
         let viewModel = TripDetailViewModel(trip: trip)
 
         #expect(viewModel.documentSubtitle(for: document) == "Ort Alexanderplatz 1, Berlin - 15.07.2026 14:30 - OCR vorhanden")
+    }
+
+    @Test func tripDetailDocumentSubtitleShowsParsedTrainNumber() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Bahnticket",
+            documentType: "Bahn",
+            extractedText: "Bahn ICE 100 Berlin Hbf 15.07.2026 08:30",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        #expect(viewModel.documentSubtitle(for: document) == "Bahn - Zug ICE100 - 15.07.2026 08:30 - OCR vorhanden")
     }
 
     @Test func tripDetailPrefillsNewStopFromDocumentSchedule() throws {

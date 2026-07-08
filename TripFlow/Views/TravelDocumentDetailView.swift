@@ -154,7 +154,14 @@ struct TravelDocumentDetailView: View {
                         }
 
                         if viewModel.stopSuggestionTextExcerpt.isEmpty == false {
-                            LabeledContent("Textausschnitt", value: viewModel.stopSuggestionTextExcerpt)
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Textausschnitt")
+                                    .foregroundStyle(.secondary)
+
+                                Text(viewModel.stopSuggestionTextExcerpt)
+                                    .font(.footnote)
+                                    .textSelection(.enabled)
+                            }
                         }
                     }
                 }

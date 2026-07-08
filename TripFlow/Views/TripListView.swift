@@ -36,13 +36,7 @@ struct TripListView: View {
 
                                     Spacer()
 
-                                    Text(summary.status.title)
-                                        .font(.caption)
-                                        .fontWeight(.semibold)
-                                        .foregroundStyle(statusForegroundStyle(for: summary.status))
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(statusBackgroundStyle(for: summary.status), in: Capsule())
+                                    TripPlanningStatusBadge(status: summary.status)
                                 }
 
                                 Text(summary.dateRangeText)
@@ -118,20 +112,6 @@ struct TripListView: View {
         }
     }
 
-    private func statusForegroundStyle(for status: TripPlanningStatus) -> Color {
-        switch status {
-        case .empty:
-            return .secondary
-        case .planning:
-            return .blue
-        case .ready:
-            return .green
-        }
-    }
-
-    private func statusBackgroundStyle(for status: TripPlanningStatus) -> Color {
-        statusForegroundStyle(for: status).opacity(0.12)
-    }
 }
 
 #Preview {

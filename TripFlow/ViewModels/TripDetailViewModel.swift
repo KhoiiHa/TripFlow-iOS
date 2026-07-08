@@ -119,6 +119,7 @@ final class TripDetailViewModel {
     private let timelineService: TimelineService
     private let mapService: MapService
     private let geocodingService: any LocationGeocoding
+    private let planningStatusService: TripPlanningStatusService
 
     init(
         trip: Trip,
@@ -128,7 +129,8 @@ final class TripDetailViewModel {
         travelDocumentParserService: TravelDocumentParserService = TravelDocumentParserService(),
         timelineService: TimelineService = TimelineService(),
         mapService: MapService = MapService(),
-        geocodingService: any LocationGeocoding = LocationGeocodingService()
+        geocodingService: any LocationGeocoding = LocationGeocodingService(),
+        planningStatusService: TripPlanningStatusService = TripPlanningStatusService()
     ) {
         title = trip.title
         startDate = trip.startDate
@@ -142,6 +144,7 @@ final class TripDetailViewModel {
         self.timelineService = timelineService
         self.mapService = mapService
         self.geocodingService = geocodingService
+        self.planningStatusService = planningStatusService
     }
 
     func setStartDateEnabled(_ isEnabled: Bool) {
@@ -176,6 +179,10 @@ final class TripDetailViewModel {
 
     func sortedStops(for trip: Trip) -> [Stop] {
         timelineService.sortedStops(for: trip)
+    }
+
+    func planningSummary(for trip: Trip) -> TripPlanningSummary {
+        planningStatusService.summary(for: trip)
     }
 
     func timeline(for trip: Trip) -> Timeline {

@@ -161,6 +161,19 @@ struct TripFlowTests {
         #expect(viewModel.errorMessage == nil)
     }
 
+    @Test func tripDetailProvidesPlanningSummary() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        _ = try stopService.createStop(title: "Hotel", locationName: "", for: trip)
+        _ = try travelDocumentService.createDocument(title: "Hotelbuchung", for: trip)
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        let summary = viewModel.planningSummary(for: trip)
+
+        #expect(summary.status.title == "Ready")
+        #expect(summary.stopCountText == "1 Stop")
+        #expect(summary.documentCountText == "1 Unterlage")
+    }
+
     @Test func createTravelDocumentTrimsValuesAndAssignsTrip() throws {
         let trip = try tripService.createTrip(title: "Berlin")
 

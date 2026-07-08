@@ -524,6 +524,26 @@ struct TripFlowTests {
         )
     }
 
+    @Test func tripDetailCancelsCreateDocumentCleanly() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        viewModel.newDocumentTitle = "Hotelbuchung"
+        viewModel.newDocumentType = "Hotel"
+        viewModel.newDocumentFileName = "hotel.pdf"
+        viewModel.newDocumentExtractedText = "Check-in 15.07.2026"
+        viewModel.documentErrorMessage = "Fehler"
+        viewModel.isShowingCreateDocument = true
+
+        viewModel.cancelCreateDocument()
+
+        #expect(viewModel.newDocumentTitle == "")
+        #expect(viewModel.newDocumentType == "")
+        #expect(viewModel.newDocumentFileName == "")
+        #expect(viewModel.newDocumentExtractedText == "")
+        #expect(viewModel.documentErrorMessage == nil)
+        #expect(viewModel.isShowingCreateDocument == false)
+    }
+
     @Test @MainActor func tripDetailRejectsDocumentWithoutTitle() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let viewModel = TripDetailViewModel(trip: trip)

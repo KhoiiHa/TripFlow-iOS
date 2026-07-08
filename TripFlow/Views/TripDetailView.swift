@@ -460,8 +460,7 @@ struct TripDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Abbrechen") {
-                        viewModel.isShowingCreateDocument = false
-                        viewModel.documentErrorMessage = nil
+                        viewModel.cancelCreateDocument()
                     }
                 }
 

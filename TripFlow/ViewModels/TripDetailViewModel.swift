@@ -255,6 +255,15 @@ final class TripDetailViewModel {
         isShowingCreateDocument = true
     }
 
+    func cancelCreateDocument() {
+        newDocumentTitle = ""
+        newDocumentType = ""
+        newDocumentFileName = ""
+        newDocumentExtractedText = ""
+        documentErrorMessage = nil
+        isShowingCreateDocument = false
+    }
+
     func setNewStopScheduledDateEnabled(_ isEnabled: Bool) {
         newStopHasScheduledDate = isEnabled
         newStopScheduledDate = isEnabled ? (newStopScheduledDate ?? startDate ?? Date()) : nil

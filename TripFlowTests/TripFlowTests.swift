@@ -204,6 +204,18 @@ struct TripFlowTests {
         #expect(result.suggestedLocationName == "Alexanderplatz 1, Berlin")
     }
 
+    @Test func parserSuggestsLocationNameFromRailStationLabel() {
+        let result = travelDocumentParserService.parse(
+            """
+            Bahn ICE 100 15.07.2026 08:30
+            Von: Berlin Hbf
+            Nach: Hamburg Hbf
+            """
+        )
+
+        #expect(result.suggestedLocationName == "Berlin Hbf")
+    }
+
     @Test func tripDetailSortsDocumentsNewestFirst() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let olderDocument = TravelDocument(
@@ -350,7 +362,11 @@ struct TripFlowTests {
         let trip = try tripService.createTrip(title: "Berlin")
         let document = try travelDocumentService.createDocument(
             title: "Bahnticket",
-            extractedText: "Bahn ICE 100 Berlin Hbf 15.07.2026 08:30",
+            extractedText: """
+            Bahn ICE 100 15.07.2026 08:30
+            Von: Berlin Hbf
+            Nach: Hamburg Hbf
+            """,
             for: trip
         )
         let viewModel = TripDetailViewModel(trip: trip)
@@ -358,6 +374,7 @@ struct TripFlowTests {
         viewModel.showCreateStop(from: document, calendar: testCalendar())
 
         #expect(viewModel.newStopTitle == "Bahnfahrt ICE100")
+        #expect(viewModel.newStopLocationName == "Berlin Hbf")
         #expect(viewModel.stopSuggestionTrainNumber == "ICE100")
     }
 

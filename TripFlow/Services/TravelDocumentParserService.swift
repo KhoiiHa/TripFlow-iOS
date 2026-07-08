@@ -155,7 +155,17 @@ struct TravelDocumentParserService {
             "airport",
             "bahnhof",
             "station",
-            "hotel"
+            "hotel",
+            "von",
+            "nach",
+            "from",
+            "to",
+            "abfahrt",
+            "ankunft",
+            "departure",
+            "arrival",
+            "start",
+            "ziel"
         ]
 
         for line in text.split(whereSeparator: \.isNewline) {

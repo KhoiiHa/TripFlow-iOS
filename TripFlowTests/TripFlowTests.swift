@@ -543,6 +543,20 @@ struct TripFlowTests {
         #expect(viewModel.stopSuccessMessage == nil)
     }
 
+    @Test @MainActor func tripDetailCreateStopClearsOldErrorOnNewAttempt() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        let modelContext = try makeModelContext()
+        viewModel.showCreateStop()
+        viewModel.newStopTitle = "Hotel"
+        viewModel.stopErrorMessage = "Alter Fehler"
+
+        viewModel.createStop(for: trip, in: modelContext)
+
+        #expect(trip.stops.count == 1)
+        #expect(viewModel.stopErrorMessage == nil)
+    }
+
     @Test @MainActor func tripDetailCreatesDocumentFromSheetState() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let viewModel = TripDetailViewModel(trip: trip)
@@ -585,6 +599,20 @@ struct TripFlowTests {
 
         #expect(viewModel.canCreateDocument == false)
         #expect(viewModel.createDocumentDisabledReason == "Name fuer die Reiseunterlage fehlt.")
+    }
+
+    @Test @MainActor func tripDetailCreateDocumentClearsOldErrorOnNewAttempt() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        let modelContext = try makeModelContext()
+        viewModel.newDocumentTitle = "Hotelbuchung"
+        viewModel.documentErrorMessage = "Alter Fehler"
+        viewModel.isShowingCreateDocument = true
+
+        viewModel.createDocument(for: trip, in: modelContext)
+
+        #expect(trip.documents.count == 1)
+        #expect(viewModel.documentErrorMessage == nil)
     }
 
     @Test func tripDetailCancelsCreateDocumentCleanly() throws {

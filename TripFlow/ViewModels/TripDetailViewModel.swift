@@ -314,6 +314,8 @@ final class TripDetailViewModel {
     }
 
     func createStop(for trip: Trip, in modelContext: ModelContext) {
+        stopErrorMessage = nil
+
         do {
             guard isReviewingDocumentStopSuggestion == false || (newStopHasScheduledDate && newStopScheduledDate != nil) else {
                 stopErrorMessage = "Bitte waehle ein Datum und eine Uhrzeit fuer den vorgeschlagenen Stop aus."
@@ -362,6 +364,8 @@ final class TripDetailViewModel {
     }
 
     func createDocument(for trip: Trip, in modelContext: ModelContext) {
+        documentErrorMessage = nil
+
         do {
             let document = try travelDocumentService.createDocument(
                 title: newDocumentTitle,

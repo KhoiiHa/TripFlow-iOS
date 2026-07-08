@@ -383,6 +383,7 @@ final class TripDetailViewModel {
     }
 
     func fillNewStopCoordinatesFromLocationName() async {
+        stopErrorMessage = nil
         isResolvingNewStopCoordinates = true
         defer { isResolvingNewStopCoordinates = false }
 

@@ -1220,6 +1220,7 @@ struct TripFlowTests {
             )
         )
         viewModel.newStopLocationName = "Berlin"
+        viewModel.stopErrorMessage = "Alter Fehler"
 
         await viewModel.fillNewStopCoordinatesFromLocationName()
 
@@ -1262,6 +1263,7 @@ struct TripFlowTests {
                 result: .success(GeocodedCoordinate(latitude: 52.52, longitude: 13.405))
             )
         )
+        viewModel.errorMessage = "Alter Fehler"
 
         await viewModel.fillCoordinatesFromLocationName()
 

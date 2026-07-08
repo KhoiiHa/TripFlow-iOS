@@ -95,6 +95,7 @@ final class StopDetailViewModel {
     }
 
     func fillCoordinatesFromLocationName() async {
+        errorMessage = nil
         isResolvingCoordinates = true
         defer { isResolvingCoordinates = false }
 

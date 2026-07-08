@@ -176,6 +176,10 @@ final class TripDetailViewModel {
             details.append("Ref \(reservationNumber)")
         }
 
+        if let parsedDateText = Self.parsedDateText(from: parseResult) {
+            details.append(parsedDateText)
+        }
+
         let hasExtractedText = document.extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
         details.append(hasExtractedText ? "OCR vorhanden" : "OCR offen")
 
@@ -359,5 +363,19 @@ final class TripDetailViewModel {
         }
 
         return String(trimmedText.prefix(120)) + "..."
+    }
+
+    private static func parsedDateText(from parseResult: TravelDocumentParseResult) -> String? {
+        guard let date = parseResult.date else {
+            return nil
+        }
+
+        let dateText = String(format: "%02d.%02d.%04d", date.day, date.month, date.year)
+
+        guard let time = parseResult.time else {
+            return dateText
+        }
+
+        return dateText + " " + String(format: "%02d:%02d", time.hour, time.minute)
     }
 }

@@ -238,7 +238,7 @@ struct TripFlowTests {
         )
         let viewModel = TripDetailViewModel(trip: trip)
 
-        #expect(viewModel.documentSubtitle(for: document) == "Flug - Flug LH2034 - Ref XYZ789 - OCR vorhanden")
+        #expect(viewModel.documentSubtitle(for: document) == "Flug - Flug LH2034 - Ref XYZ789 - 05.08.2026 09:05 - OCR vorhanden")
     }
 
     @Test func tripDetailDocumentSubtitleShowsOCRStatusForExtractedText() throws {
@@ -250,7 +250,19 @@ struct TripFlowTests {
         )
         let viewModel = TripDetailViewModel(trip: trip)
 
-        #expect(viewModel.documentSubtitle(for: document) == "OCR vorhanden")
+        #expect(viewModel.documentSubtitle(for: document) == "15.07.2026 - OCR vorhanden")
+    }
+
+    @Test func tripDetailDocumentSubtitleShowsParsedDateAndTime() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Hotel",
+            extractedText: "Check-in 15.07.2026 ab 14:30 Uhr",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        #expect(viewModel.documentSubtitle(for: document) == "15.07.2026 14:30 - OCR vorhanden")
     }
 
     @Test func tripDetailPrefillsNewStopFromDocumentSchedule() throws {

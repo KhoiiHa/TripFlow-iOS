@@ -15,7 +15,15 @@ final class TripListViewModel {
     var errorMessage: String?
 
     var canCreateTrip: Bool {
-        newTripTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        createTripDisabledReason == nil
+    }
+
+    var createTripDisabledReason: String? {
+        if newTripTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "Name fuer den Trip fehlt."
+        }
+
+        return nil
     }
 
     private let tripService: TripService
@@ -28,6 +36,12 @@ final class TripListViewModel {
         newTripTitle = ""
         errorMessage = nil
         isShowingCreateTrip = true
+    }
+
+    func cancelCreateTrip() {
+        newTripTitle = ""
+        errorMessage = nil
+        isShowingCreateTrip = false
     }
 
     func createTrip(in modelContext: ModelContext) {

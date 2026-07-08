@@ -31,6 +31,27 @@ struct TripFlowTests {
         }
     }
 
+    @Test func tripListExplainsDisabledCreateTripWithoutTitle() {
+        let viewModel = TripListViewModel()
+        viewModel.newTripTitle = "   "
+
+        #expect(viewModel.canCreateTrip == false)
+        #expect(viewModel.createTripDisabledReason == "Name fuer den Trip fehlt.")
+    }
+
+    @Test func tripListCancelsCreateTripCleanly() {
+        let viewModel = TripListViewModel()
+        viewModel.newTripTitle = "Berlin"
+        viewModel.errorMessage = "Fehler"
+        viewModel.isShowingCreateTrip = true
+
+        viewModel.cancelCreateTrip()
+
+        #expect(viewModel.newTripTitle == "")
+        #expect(viewModel.errorMessage == nil)
+        #expect(viewModel.isShowingCreateTrip == false)
+    }
+
     @Test func createTripRejectsEndDateBeforeStartDate() {
         let startDate = Date(timeIntervalSince1970: 2)
         let endDate = Date(timeIntervalSince1970: 1)

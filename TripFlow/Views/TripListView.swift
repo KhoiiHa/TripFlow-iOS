@@ -71,13 +71,18 @@ struct TripListView: View {
                         .font(.footnote)
                         .foregroundStyle(.red)
                 }
+
+                if let createTripDisabledReason = viewModel.createTripDisabledReason {
+                    Text(createTripDisabledReason)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
             .navigationTitle("Neuer Trip")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Abbrechen") {
-                        viewModel.isShowingCreateTrip = false
-                        viewModel.errorMessage = nil
+                        viewModel.cancelCreateTrip()
                     }
                 }
 

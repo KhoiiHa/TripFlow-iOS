@@ -22,83 +22,13 @@ struct TripDetailView: View {
     var body: some View {
         Form {
             planningStatusSection
-
-            Section("Trip") {
-                TextField("Name", text: $viewModel.title)
-            }
-
-            Section("Reisedaten") {
-                Toggle("Startdatum", isOn: $viewModel.hasStartDate)
-                    .onChange(of: viewModel.hasStartDate) { _, newValue in
-                        viewModel.setStartDateEnabled(newValue)
-                    }
-
-                if viewModel.hasStartDate {
-                    DatePicker(
-                        "Start",
-                        selection: startDateBinding,
-                        displayedComponents: .date
-                    )
-                }
-
-                Toggle("Enddatum", isOn: $viewModel.hasEndDate)
-                    .onChange(of: viewModel.hasEndDate) { _, newValue in
-                        viewModel.setEndDateEnabled(newValue)
-                    }
-
-                if viewModel.hasEndDate {
-                    DatePicker(
-                        "Ende",
-                        selection: endDateBinding,
-                        displayedComponents: .date
-                    )
-                }
-            }
-
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-            }
-
-            if let saveDisabledReason = viewModel.saveDisabledReason {
-                Text(saveDisabledReason)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-
-            if let stopSuccessMessage = viewModel.stopSuccessMessage {
-                Text(stopSuccessMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.green)
-            }
-
             timelineSection
             mapSection
+            stopsSection
             documentsSection
-
-            Section("Stops") {
-                let stops = viewModel.sortedStops(for: trip)
-
-                if stops.isEmpty {
-                    tripDetailEmptyState(
-                        title: "Noch keine Stops",
-                        systemImage: "mappin.and.ellipse",
-                        message: "Lege den ersten geplanten Ort fuer diesen Trip an.",
-                        actionTitle: "Stop hinzufügen",
-                        actionSystemImage: "plus"
-                    ) {
-                        viewModel.showCreateStop()
-                    }
-                } else {
-                    ForEach(stops) { stop in
-                        stopRow(stop)
-                    }
-                    .onDelete { offsets in
-                        viewModel.deleteStops(stops, at: offsets, from: trip, in: modelContext)
-                    }
-                }
-            }
+            tripEditingSection
+            travelDatesEditingSection
+            tripMessagesSection
         }
         .navigationTitle(trip.title)
         .toolbar {
@@ -125,6 +55,63 @@ struct TripDetailView: View {
         }
     }
 
+    private var tripEditingSection: some View {
+        Section("Trip bearbeiten") {
+            TextField("Name", text: $viewModel.title)
+        }
+    }
+
+    private var travelDatesEditingSection: some View {
+        Section("Reisedaten bearbeiten") {
+            Toggle("Startdatum", isOn: $viewModel.hasStartDate)
+                .onChange(of: viewModel.hasStartDate) { _, newValue in
+                    viewModel.setStartDateEnabled(newValue)
+                }
+
+            if viewModel.hasStartDate {
+                DatePicker(
+                    "Start",
+                    selection: startDateBinding,
+                    displayedComponents: .date
+                )
+            }
+
+            Toggle("Enddatum", isOn: $viewModel.hasEndDate)
+                .onChange(of: viewModel.hasEndDate) { _, newValue in
+                    viewModel.setEndDateEnabled(newValue)
+                }
+
+            if viewModel.hasEndDate {
+                DatePicker(
+                    "Ende",
+                    selection: endDateBinding,
+                    displayedComponents: .date
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var tripMessagesSection: some View {
+        if let errorMessage = viewModel.errorMessage {
+            Text(errorMessage)
+                .font(.footnote)
+                .foregroundStyle(.red)
+        }
+
+        if let saveDisabledReason = viewModel.saveDisabledReason {
+            Text(saveDisabledReason)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+
+        if let stopSuccessMessage = viewModel.stopSuccessMessage {
+            Text(stopSuccessMessage)
+                .font(.footnote)
+                .foregroundStyle(.green)
+        }
+    }
+
     private var planningStatusSection: some View {
         Section("Planungsstand") {
             let summary = viewModel.planningSummary(for: trip)
@@ -147,6 +134,31 @@ struct TripDetailView: View {
                 TripPlanningStatusBadge(status: summary.status)
             }
             .padding(.vertical, 2)
+        }
+    }
+
+    private var stopsSection: some View {
+        Section("Stops") {
+            let stops = viewModel.sortedStops(for: trip)
+
+            if stops.isEmpty {
+                tripDetailEmptyState(
+                    title: "Noch keine Stops",
+                    systemImage: "mappin.and.ellipse",
+                    message: "Lege den ersten geplanten Ort fuer diesen Trip an.",
+                    actionTitle: "Stop hinzufügen",
+                    actionSystemImage: "plus"
+                ) {
+                    viewModel.showCreateStop()
+                }
+            } else {
+                ForEach(stops) { stop in
+                    stopRow(stop)
+                }
+                .onDelete { offsets in
+                    viewModel.deleteStops(stops, at: offsets, from: trip, in: modelContext)
+                }
+            }
         }
     }
 

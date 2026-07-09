@@ -153,13 +153,13 @@ struct TripDetailView: View {
             } else {
                 ForEach(timeline.days) { day in
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(viewModel.timelineDayTitle(for: day))
+                        Label(viewModel.timelineDayTitle(for: day), systemImage: "calendar")
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
 
                         ForEach(day.stops) { stop in
-                            timelineStopRow(stop)
+                            timelineStopRow(stop, isUnscheduled: false)
                         }
                     }
                     .padding(.vertical, 4)
@@ -167,13 +167,13 @@ struct TripDetailView: View {
 
                 if timeline.unscheduledStops.isEmpty == false {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Ohne Datum")
+                        Label("Ohne Datum", systemImage: "calendar.badge.exclamationmark")
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
 
                         ForEach(timeline.unscheduledStops) { stop in
-                            timelineStopRow(stop)
+                            timelineStopRow(stop, isUnscheduled: true)
                         }
                     }
                     .padding(.vertical, 4)
@@ -249,28 +249,30 @@ struct TripDetailView: View {
         }
     }
 
-    private func timelineStopRow(_ stop: Stop) -> some View {
+    private func timelineStopRow(_ stop: Stop, isUnscheduled: Bool) -> some View {
         NavigationLink {
             StopDetailView(stop: stop)
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text(viewModel.timelineTimeTitle(for: stop) ?? "--:--")
+                Text(viewModel.timelineTimeTitle(for: stop) ?? "Offen")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 48, alignment: .leading)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(isUnscheduled ? Color.secondary : Color.blue)
+                    .frame(width: 52, alignment: .leading)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(stop.title)
-                        .font(.body)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
 
                     if stop.locationName.isEmpty == false {
-                        Text(stop.locationName)
+                        Label(stop.locationName, systemImage: "mappin.and.ellipse")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            .padding(.vertical, 2)
+            .padding(.vertical, 4)
         }
     }
 

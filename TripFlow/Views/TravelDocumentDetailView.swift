@@ -20,82 +20,10 @@ struct TravelDocumentDetailView: View {
 
     var body: some View {
         Form {
-            Section("Reiseunterlage") {
-                TextField("Name", text: $viewModel.title)
-                TextField("Typ optional", text: $viewModel.documentType)
-                TextField("Dateiname optional", text: $viewModel.fileName)
-            }
-
-            Section("Text") {
-                TextEditor(text: $viewModel.extractedText)
-                    .frame(minHeight: 180)
-
-                if viewModel.hasExtractedText == false {
-                    Text("Noch kein OCR-Text vorhanden.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            if viewModel.hasParsedTravelData() {
-                Section("Erkannte Reisedaten") {
-                    if let suggestedStopTitle = viewModel.parsedSuggestedStopTitle() {
-                        LabeledContent("Stop-Vorschlag", value: suggestedStopTitle)
-                    }
-
-                    if let parsedScheduleText = viewModel.parsedScheduleText() {
-                        LabeledContent("Datum und Uhrzeit", value: parsedScheduleText)
-                    }
-
-                    if let suggestedLocationName = viewModel.parsedSuggestedLocationName() {
-                        LabeledContent("Ort", value: suggestedLocationName)
-                    }
-
-                    if let flightNumber = viewModel.parsedFlightNumber() {
-                        LabeledContent("Flugnummer", value: flightNumber)
-                    }
-
-                    if let trainNumber = viewModel.parsedTrainNumber() {
-                        LabeledContent("Zugnummer", value: trainNumber)
-                    }
-
-                    if let reservationNumber = viewModel.parsedReservationNumber() {
-                        LabeledContent("Reservierungsnummer", value: reservationNumber)
-                    }
-
-                    if viewModel.canShowStopSuggestionAction(for: document) {
-                        Button {
-                            viewModel.showStopSuggestion(from: document)
-                        } label: {
-                            Label("Stop daraus erstellen", systemImage: "calendar.badge.plus")
-                        }
-                    }
-                }
-            }
-
-            if let stopSuggestionUnavailableMessage = viewModel.stopSuggestionUnavailableMessage(for: document) {
-                Text(stopSuggestionUnavailableMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-
-            if let stopSuggestionSuccessMessage = viewModel.stopSuggestionSuccessMessage {
-                Text(stopSuggestionSuccessMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.green)
-            }
-
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-            }
-
-            if let saveDisabledReason = viewModel.saveDisabledReason {
-                Text(saveDisabledReason)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
+            documentEditingSection
+            parsedTravelDataSection
+            ocrTextSection
+            documentMessagesSection
         }
         .navigationTitle(document.title)
         .toolbar {
@@ -108,6 +36,93 @@ struct TravelDocumentDetailView: View {
         }
         .sheet(isPresented: $viewModel.isShowingStopSuggestion) {
             stopSuggestionSheet
+        }
+    }
+
+    private var documentEditingSection: some View {
+        Section("Reiseunterlage bearbeiten") {
+            TextField("Name", text: $viewModel.title)
+            TextField("Typ optional", text: $viewModel.documentType)
+            TextField("Dateiname optional", text: $viewModel.fileName)
+        }
+    }
+
+    @ViewBuilder
+    private var parsedTravelDataSection: some View {
+        if viewModel.hasParsedTravelData() {
+            Section("Erkannte Reisedaten") {
+                if let suggestedStopTitle = viewModel.parsedSuggestedStopTitle() {
+                    LabeledContent("Stop-Vorschlag", value: suggestedStopTitle)
+                }
+
+                if let parsedScheduleText = viewModel.parsedScheduleText() {
+                    LabeledContent("Datum und Uhrzeit", value: parsedScheduleText)
+                }
+
+                if let suggestedLocationName = viewModel.parsedSuggestedLocationName() {
+                    LabeledContent("Ort", value: suggestedLocationName)
+                }
+
+                if let flightNumber = viewModel.parsedFlightNumber() {
+                    LabeledContent("Flugnummer", value: flightNumber)
+                }
+
+                if let trainNumber = viewModel.parsedTrainNumber() {
+                    LabeledContent("Zugnummer", value: trainNumber)
+                }
+
+                if let reservationNumber = viewModel.parsedReservationNumber() {
+                    LabeledContent("Reservierungsnummer", value: reservationNumber)
+                }
+
+                if viewModel.canShowStopSuggestionAction(for: document) {
+                    Button {
+                        viewModel.showStopSuggestion(from: document)
+                    } label: {
+                        Label("Stop daraus erstellen", systemImage: "calendar.badge.plus")
+                    }
+                }
+            }
+        }
+    }
+
+    private var ocrTextSection: some View {
+        Section("OCR-Text") {
+            TextEditor(text: $viewModel.extractedText)
+                .frame(minHeight: 180)
+
+            if viewModel.hasExtractedText == false {
+                Text("Noch kein OCR-Text vorhanden.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var documentMessagesSection: some View {
+        if let stopSuggestionUnavailableMessage = viewModel.stopSuggestionUnavailableMessage(for: document) {
+            Text(stopSuggestionUnavailableMessage)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+
+        if let stopSuggestionSuccessMessage = viewModel.stopSuggestionSuccessMessage {
+            Text(stopSuggestionSuccessMessage)
+                .font(.footnote)
+                .foregroundStyle(.green)
+        }
+
+        if let errorMessage = viewModel.errorMessage {
+            Text(errorMessage)
+                .font(.footnote)
+                .foregroundStyle(.red)
+        }
+
+        if let saveDisabledReason = viewModel.saveDisabledReason {
+            Text(saveDisabledReason)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
     }
 

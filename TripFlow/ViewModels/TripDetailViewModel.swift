@@ -100,6 +100,10 @@ final class TripDetailViewModel {
         return nil
     }
 
+    var newDocumentTypeSuggestions: [String] {
+        ["Flug", "Hotel", "Bahn", "Reservierung", "Ticket"]
+    }
+
     var canFillNewStopCoordinatesFromLocationName: Bool {
         newStopCoordinateLookupDisabledReason == nil
     }
@@ -367,6 +371,10 @@ final class TripDetailViewModel {
         newDocumentExtractedText = ""
         documentErrorMessage = nil
         isShowingCreateDocument = false
+    }
+
+    func applyNewDocumentTypeSuggestion(_ suggestion: String) {
+        newDocumentType = suggestion
     }
 
     func setNewStopScheduledDateEnabled(_ isEnabled: Bool) {

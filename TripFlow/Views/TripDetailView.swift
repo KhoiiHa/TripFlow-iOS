@@ -571,10 +571,29 @@ struct TripDetailView: View {
                 Section("Reiseunterlage") {
                     TextField("Name", text: $viewModel.newDocumentTitle)
                     TextField("Typ optional", text: $viewModel.newDocumentType)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(viewModel.newDocumentTypeSuggestions, id: \.self) { suggestion in
+                                Button {
+                                    viewModel.applyNewDocumentTypeSuggestion(suggestion)
+                                } label: {
+                                    Text(suggestion)
+                                        .font(.caption)
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            }
+                        }
+                        .padding(.vertical, 2)
+                    }
+                }
+
+                Section("Datei") {
                     TextField("Dateiname optional", text: $viewModel.newDocumentFileName)
                 }
 
-                Section("Text") {
+                Section("OCR-Text optional") {
                     TextEditor(text: $viewModel.newDocumentExtractedText)
                         .frame(minHeight: 120)
 

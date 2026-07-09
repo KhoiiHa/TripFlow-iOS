@@ -744,6 +744,17 @@ struct TripFlowTests {
         #expect(viewModel.createDocumentDisabledReason == "Name fuer die Reiseunterlage fehlt.")
     }
 
+    @Test func tripDetailAppliesDocumentTypeSuggestion() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        #expect(viewModel.newDocumentTypeSuggestions.contains("Hotel"))
+
+        viewModel.applyNewDocumentTypeSuggestion("Hotel")
+
+        #expect(viewModel.newDocumentType == "Hotel")
+    }
+
     @Test @MainActor func tripDetailCreateDocumentClearsOldErrorOnNewAttempt() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let viewModel = TripDetailViewModel(trip: trip)

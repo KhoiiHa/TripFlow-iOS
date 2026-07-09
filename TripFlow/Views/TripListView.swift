@@ -99,8 +99,30 @@ struct TripListView: View {
     private var createTripSheet: some View {
         NavigationStack {
             Form {
-                Section {
+                Section("Trip") {
                     TextField("Trip-Name", text: $viewModel.newTripTitle)
+                }
+
+                Section("Reisedaten optional") {
+                    Toggle("Startdatum", isOn: $viewModel.newTripHasStartDate)
+
+                    if viewModel.newTripHasStartDate {
+                        DatePicker(
+                            "Start",
+                            selection: $viewModel.newTripStartDate,
+                            displayedComponents: .date
+                        )
+                    }
+
+                    Toggle("Enddatum", isOn: $viewModel.newTripHasEndDate)
+
+                    if viewModel.newTripHasEndDate {
+                        DatePicker(
+                            "Ende",
+                            selection: $viewModel.newTripEndDate,
+                            displayedComponents: .date
+                        )
+                    }
                 }
 
                 if let errorMessage = viewModel.errorMessage {

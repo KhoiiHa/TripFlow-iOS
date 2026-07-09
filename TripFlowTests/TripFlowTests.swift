@@ -40,16 +40,59 @@ struct TripFlowTests {
         #expect(viewModel.createTripDisabledReason == "Name fuer den Trip fehlt.")
     }
 
+    @Test func tripListExplainsDisabledCreateTripWithInvalidDateRange() {
+        let viewModel = TripListViewModel()
+        viewModel.newTripTitle = "Berlin"
+        viewModel.newTripHasStartDate = true
+        viewModel.newTripStartDate = Date(timeIntervalSince1970: 2)
+        viewModel.newTripHasEndDate = true
+        viewModel.newTripEndDate = Date(timeIntervalSince1970: 1)
+
+        #expect(viewModel.canCreateTrip == false)
+        #expect(viewModel.createTripDisabledReason == "Das Enddatum darf nicht vor dem Startdatum liegen.")
+    }
+
     @Test func tripListCancelsCreateTripCleanly() {
         let viewModel = TripListViewModel()
         viewModel.newTripTitle = "Berlin"
+        viewModel.newTripHasStartDate = true
+        viewModel.newTripStartDate = Date(timeIntervalSince1970: 1)
+        viewModel.newTripHasEndDate = true
+        viewModel.newTripEndDate = Date(timeIntervalSince1970: 2)
         viewModel.errorMessage = "Fehler"
         viewModel.isShowingCreateTrip = true
 
         viewModel.cancelCreateTrip()
 
         #expect(viewModel.newTripTitle == "")
+        #expect(viewModel.newTripHasStartDate == false)
+        #expect(viewModel.newTripHasEndDate == false)
         #expect(viewModel.errorMessage == nil)
+        #expect(viewModel.isShowingCreateTrip == false)
+    }
+
+    @Test @MainActor func tripListCreatesTripWithOptionalDates() throws {
+        let viewModel = TripListViewModel()
+        let modelContext = try makeModelContext()
+        let startDate = Date(timeIntervalSince1970: 1)
+        let endDate = Date(timeIntervalSince1970: 2)
+        viewModel.newTripTitle = "  Berlin  "
+        viewModel.newTripHasStartDate = true
+        viewModel.newTripStartDate = startDate
+        viewModel.newTripHasEndDate = true
+        viewModel.newTripEndDate = endDate
+        viewModel.isShowingCreateTrip = true
+
+        viewModel.createTrip(in: modelContext)
+
+        let trips = try modelContext.fetch(FetchDescriptor<Trip>())
+        #expect(trips.count == 1)
+        #expect(trips.first?.title == "Berlin")
+        #expect(trips.first?.startDate == startDate)
+        #expect(trips.first?.endDate == endDate)
+        #expect(viewModel.newTripTitle == "")
+        #expect(viewModel.newTripHasStartDate == false)
+        #expect(viewModel.newTripHasEndDate == false)
         #expect(viewModel.isShowingCreateTrip == false)
     }
 

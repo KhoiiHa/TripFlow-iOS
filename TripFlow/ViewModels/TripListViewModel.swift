@@ -11,6 +11,10 @@ import SwiftData
 @Observable
 final class TripListViewModel {
     var newTripTitle = ""
+    var newTripHasStartDate = false
+    var newTripStartDate = Date()
+    var newTripHasEndDate = false
+    var newTripEndDate = Date()
     var isShowingCreateTrip = false
     var errorMessage: String?
 
@@ -23,7 +27,21 @@ final class TripListViewModel {
             return "Name fuer den Trip fehlt."
         }
 
+        if let startDate = newTripSelectedStartDate,
+           let endDate = newTripSelectedEndDate,
+           endDate < startDate {
+            return "Das Enddatum darf nicht vor dem Startdatum liegen."
+        }
+
         return nil
+    }
+
+    private var newTripSelectedStartDate: Date? {
+        newTripHasStartDate ? newTripStartDate : nil
+    }
+
+    private var newTripSelectedEndDate: Date? {
+        newTripHasEndDate ? newTripEndDate : nil
     }
 
     private let tripService: TripService
@@ -39,21 +57,37 @@ final class TripListViewModel {
 
     func showCreateTrip() {
         newTripTitle = ""
+        newTripHasStartDate = false
+        newTripStartDate = Date()
+        newTripHasEndDate = false
+        newTripEndDate = Date()
         errorMessage = nil
         isShowingCreateTrip = true
     }
 
     func cancelCreateTrip() {
         newTripTitle = ""
+        newTripHasStartDate = false
+        newTripStartDate = Date()
+        newTripHasEndDate = false
+        newTripEndDate = Date()
         errorMessage = nil
         isShowingCreateTrip = false
     }
 
     func createTrip(in modelContext: ModelContext) {
         do {
-            let trip = try tripService.createTrip(title: newTripTitle)
+            let trip = try tripService.createTrip(
+                title: newTripTitle,
+                startDate: newTripSelectedStartDate,
+                endDate: newTripSelectedEndDate
+            )
             modelContext.insert(trip)
             newTripTitle = ""
+            newTripHasStartDate = false
+            newTripStartDate = Date()
+            newTripHasEndDate = false
+            newTripEndDate = Date()
             errorMessage = nil
             isShowingCreateTrip = false
         } catch TripValidationError.emptyTitle {

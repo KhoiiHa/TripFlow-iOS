@@ -17,40 +17,23 @@ struct TripListView: View {
         NavigationStack {
             List {
                 if trips.isEmpty {
-                    ContentUnavailableView(
-                        "Noch keine Trips",
-                        systemImage: "airplane.departure",
-                        description: Text("Erstelle deinen ersten Trip, um deine Reiseplanung zu starten.")
-                    )
+                    ContentUnavailableView {
+                        Label("Noch keine Trips", systemImage: "airplane.departure")
+                    } description: {
+                        Text("Erstelle deinen ersten Trip, um deine Reiseplanung zu starten.")
+                    } actions: {
+                        Button {
+                            viewModel.showCreateTrip()
+                        } label: {
+                            Label("Trip erstellen", systemImage: "plus")
+                        }
+                    }
                 } else {
                     ForEach(trips) { trip in
                         NavigationLink {
                             TripDetailView(trip: trip)
                         } label: {
-                            let summary = viewModel.planningSummary(for: trip)
-
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack(alignment: .firstTextBaseline) {
-                                    Text(trip.title)
-                                        .font(.headline)
-
-                                    Spacer()
-
-                                    TripPlanningStatusBadge(status: summary.status)
-                                }
-
-                                Text(summary.dateRangeText)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-
-                                HStack(spacing: 8) {
-                                    Label(summary.stopCountText, systemImage: "mappin.and.ellipse")
-                                    Label(summary.documentCountText, systemImage: "doc.text")
-                                }
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            }
-                            .padding(.vertical, 4)
+                            tripRow(trip)
                         }
                     }
                     .onDelete { offsets in
@@ -72,6 +55,45 @@ struct TripListView: View {
                 createTripSheet
             }
         }
+    }
+
+    private func tripRow(_ trip: Trip) -> some View {
+        let summary = viewModel.planningSummary(for: trip)
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(trip.title)
+                    .font(.headline)
+                    .lineLimit(1)
+
+                Spacer()
+
+                TripPlanningStatusBadge(status: summary.status)
+            }
+
+            Label(summary.dateRangeText, systemImage: "calendar")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) {
+                    tripMetricLabel(summary.stopCountText, systemImage: "mappin.and.ellipse")
+                    tripMetricLabel(summary.documentCountText, systemImage: "doc.text")
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    tripMetricLabel(summary.stopCountText, systemImage: "mappin.and.ellipse")
+                    tripMetricLabel(summary.documentCountText, systemImage: "doc.text")
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 5)
+    }
+
+    private func tripMetricLabel(_ title: String, systemImage: String) -> some View {
+        Label(title, systemImage: systemImage)
     }
 
     private var createTripSheet: some View {

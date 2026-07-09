@@ -482,10 +482,34 @@ struct TripDetailView: View {
 
                 Section(viewModel.isReviewingDocumentStopSuggestion ? "Vor dem Speichern bearbeiten" : "Stop") {
                     TextField("Stop-Name", text: $viewModel.newStopTitle)
-                    TextField("Ort optional", text: $viewModel.newStopLocationName)
                 }
 
-                Section("Koordinaten") {
+                Section(viewModel.isReviewingDocumentStopSuggestion ? "Zeitpunkt bestaetigen" : "Zeitpunkt optional") {
+                    if viewModel.isReviewingDocumentStopSuggestion {
+                        DatePicker(
+                            "Datum und Uhrzeit",
+                            selection: newStopScheduledDateBinding,
+                            displayedComponents: [.date, .hourAndMinute]
+                        )
+                    } else {
+                        Toggle("Datum und Uhrzeit", isOn: $viewModel.newStopHasScheduledDate)
+                            .onChange(of: viewModel.newStopHasScheduledDate) { _, newValue in
+                                viewModel.setNewStopScheduledDateEnabled(newValue)
+                            }
+
+                        if viewModel.newStopHasScheduledDate {
+                            DatePicker(
+                                "Datum und Uhrzeit",
+                                selection: newStopScheduledDateBinding,
+                                displayedComponents: [.date, .hourAndMinute]
+                            )
+                        }
+                    }
+                }
+
+                Section("Ort und Koordinaten") {
+                    TextField("Ort optional", text: $viewModel.newStopLocationName)
+
                     TextField("Latitude optional", text: $viewModel.newStopLatitudeText)
                         .keyboardType(.numbersAndPunctuation)
                     TextField("Longitude optional", text: $viewModel.newStopLongitudeText)
@@ -510,37 +534,13 @@ struct TripDetailView: View {
                     }
                 }
 
-                Section("Zeitpunkt") {
-                    if viewModel.isReviewingDocumentStopSuggestion {
-                        DatePicker(
-                            "Datum und Uhrzeit",
-                            selection: newStopScheduledDateBinding,
-                            displayedComponents: [.date, .hourAndMinute]
-                        )
-                    } else {
-                        Toggle("Datum und Uhrzeit", isOn: $viewModel.newStopHasScheduledDate)
-                            .onChange(of: viewModel.newStopHasScheduledDate) { _, newValue in
-                                viewModel.setNewStopScheduledDateEnabled(newValue)
-                            }
-
-                        if viewModel.newStopHasScheduledDate {
-                            DatePicker(
-                                "Zeit",
-                                selection: newStopScheduledDateBinding,
-                                displayedComponents: [.date, .hourAndMinute]
-                            )
-                        }
-                    }
-                }
-
                 if let stopErrorMessage = viewModel.stopErrorMessage {
                     Text(stopErrorMessage)
                         .font(.footnote)
                         .foregroundStyle(.red)
                 }
 
-                if viewModel.isReviewingDocumentStopSuggestion,
-                   let createStopDisabledReason = viewModel.createStopDisabledReason {
+                if let createStopDisabledReason = viewModel.createStopDisabledReason {
                     Text(createStopDisabledReason)
                         .font(.footnote)
                         .foregroundStyle(.secondary)

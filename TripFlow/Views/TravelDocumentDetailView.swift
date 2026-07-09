@@ -21,6 +21,7 @@ struct TravelDocumentDetailView: View {
     var body: some View {
         Form {
             documentEditingSection
+            recognitionSummarySection
             parsedTravelDataSection
             ocrTextSection
             documentMessagesSection
@@ -44,6 +45,31 @@ struct TravelDocumentDetailView: View {
             TextField("Name", text: $viewModel.title)
             TextField("Typ optional", text: $viewModel.documentType)
             TextField("Dateiname optional", text: $viewModel.fileName)
+        }
+    }
+
+    @ViewBuilder
+    private var recognitionSummarySection: some View {
+        let summaryItems = viewModel.recognitionSummaryItems()
+
+        if summaryItems.isEmpty == false {
+            Section("Review") {
+                ForEach(summaryItems) { item in
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.title)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            Text(item.value)
+                                .font(.subheadline)
+                        }
+                    } icon: {
+                        Image(systemName: item.systemImage)
+                            .foregroundStyle(.blue)
+                    }
+                }
+            }
         }
     }
 

@@ -8,6 +8,13 @@
 import Foundation
 import SwiftData
 
+struct TravelDocumentRecognitionSummaryItem: Equatable, Identifiable {
+    let id: String
+    let title: String
+    let value: String
+    let systemImage: String
+}
+
 @Observable
 final class TravelDocumentDetailViewModel {
     var title: String
@@ -82,6 +89,57 @@ final class TravelDocumentDetailViewModel {
         travelDocumentParserService.parse(extractedText, calendar: calendar)
     }
 
+    func recognitionSummaryItems(calendar: Calendar = .current) -> [TravelDocumentRecognitionSummaryItem] {
+        let result = parsedTravelDocumentResult(calendar: calendar)
+        var items: [TravelDocumentRecognitionSummaryItem] = []
+
+        if let suggestedStopTitle = result.suggestedStopTitle {
+            items.append(
+                TravelDocumentRecognitionSummaryItem(
+                    id: "stopTitle",
+                    title: "Stop",
+                    value: suggestedStopTitle,
+                    systemImage: "mappin.and.ellipse"
+                )
+            )
+        }
+
+        if let scheduledDate = result.scheduledDate {
+            items.append(
+                TravelDocumentRecognitionSummaryItem(
+                    id: "schedule",
+                    title: "Zeitpunkt",
+                    value: scheduleText(for: scheduledDate, calendar: calendar),
+                    systemImage: "calendar"
+                )
+            )
+        }
+
+        if let suggestedLocationName = result.suggestedLocationName {
+            items.append(
+                TravelDocumentRecognitionSummaryItem(
+                    id: "location",
+                    title: "Ort",
+                    value: suggestedLocationName,
+                    systemImage: "location"
+                )
+            )
+        }
+
+        if let referenceText = Self.referenceText(from: result) {
+            items.append(
+                TravelDocumentRecognitionSummaryItem(
+                    id: "reference",
+                    title: "Referenz",
+                    value: referenceText,
+                    systemImage: "number"
+                )
+            )
+        }
+
+        return items
+    }
+
     func hasParsedTravelData(calendar: Calendar = .current) -> Bool {
         let result = parsedTravelDocumentResult(calendar: calendar)
 
@@ -98,6 +156,10 @@ final class TravelDocumentDetailViewModel {
             return nil
         }
 
+        return scheduleText(for: scheduledDate, calendar: calendar)
+    }
+
+    private func scheduleText(for scheduledDate: Date, calendar: Calendar) -> String {
         let formatter = DateFormatter()
         formatter.calendar = calendar
         formatter.timeZone = calendar.timeZone
@@ -236,5 +298,19 @@ final class TravelDocumentDetailViewModel {
         }
 
         return String(trimmedText.prefix(120)) + "..."
+    }
+
+    private static func referenceText(from result: TravelDocumentParseResult) -> String? {
+        let references = [
+            result.flightNumber.map { "Flug \($0)" },
+            result.trainNumber.map { "Zug \($0)" },
+            result.reservationNumber.map { "Ref \($0)" }
+        ].compactMap { $0 }
+
+        guard references.isEmpty == false else {
+            return nil
+        }
+
+        return references.joined(separator: " - ")
     }
 }

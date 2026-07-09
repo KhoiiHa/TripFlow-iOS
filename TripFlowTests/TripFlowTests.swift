@@ -877,6 +877,25 @@ struct TripFlowTests {
         #expect(viewModel.parsedReservationNumber(calendar: testCalendar()) == "XYZ789")
     }
 
+    @Test func documentDetailBuildsRecognitionSummaryItems() {
+        let document = TravelDocument(
+            title: "Boarding Pass",
+            extractedText: """
+            Boarding LH 2034 Gate A12 05/08/26 09:05
+            Adresse: Gate A12
+            Buchungsnummer: XYZ789
+            """
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        let items = viewModel.recognitionSummaryItems(calendar: testCalendar())
+
+        #expect(items.map(\.id) == ["stopTitle", "schedule", "location", "reference"])
+        #expect(items.first { $0.id == "stopTitle" }?.value == "Flug")
+        #expect(items.first { $0.id == "location" }?.value == "Gate A12")
+        #expect(items.first { $0.id == "reference" }?.value == "Flug LH2034 - Ref XYZ789")
+    }
+
     @Test func documentDetailParsesTrainNumberMetadata() {
         let document = TravelDocument(
             title: "Bahnticket",

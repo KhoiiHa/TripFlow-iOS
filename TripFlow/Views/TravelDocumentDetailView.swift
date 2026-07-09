@@ -83,6 +83,14 @@ struct TravelDocumentDetailView: View {
                     }
                 }
             }
+        } else if viewModel.hasExtractedText {
+            Section("Erkannte Reisedaten") {
+                documentEmptyState(
+                    title: "Keine Reisedaten erkannt",
+                    systemImage: "text.magnifyingglass",
+                    message: "Der OCR-Text wurde gespeichert, enthaelt aber noch kein klares Datum, keine Uhrzeit oder keinen Ort."
+                )
+            }
         }
     }
 
@@ -92,11 +100,31 @@ struct TravelDocumentDetailView: View {
                 .frame(minHeight: 180)
 
             if viewModel.hasExtractedText == false {
-                Text("Noch kein OCR-Text vorhanden.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                documentEmptyState(
+                    title: "Noch kein OCR-Text",
+                    systemImage: "doc.text.viewfinder",
+                    message: "Fuege erkannten Text ein, damit TripFlow Reisedaten und Stop-Vorschlaege ableiten kann."
+                )
             }
         }
+    }
+
+    private func documentEmptyState(
+        title: String,
+        systemImage: String,
+        message: String
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(title, systemImage: systemImage)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+
+            Text(message)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder

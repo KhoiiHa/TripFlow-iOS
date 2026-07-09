@@ -81,8 +81,15 @@ struct TripDetailView: View {
                 let stops = viewModel.sortedStops(for: trip)
 
                 if stops.isEmpty {
-                    Text("Noch keine Stops")
-                        .foregroundStyle(.secondary)
+                    tripDetailEmptyState(
+                        title: "Noch keine Stops",
+                        systemImage: "mappin.and.ellipse",
+                        message: "Lege den ersten geplanten Ort fuer diesen Trip an.",
+                        actionTitle: "Stop hinzufügen",
+                        actionSystemImage: "plus"
+                    ) {
+                        viewModel.showCreateStop()
+                    }
                 } else {
                     ForEach(stops) { stop in
                         stopRow(stop)
@@ -148,8 +155,15 @@ struct TripDetailView: View {
             let timeline = viewModel.timeline(for: trip)
 
             if timeline.days.isEmpty && timeline.unscheduledStops.isEmpty {
-                Text("Noch keine Timeline")
-                    .foregroundStyle(.secondary)
+                tripDetailEmptyState(
+                    title: "Noch keine Timeline",
+                    systemImage: "calendar",
+                    message: "Plane einen Stop mit Datum, um die Tagesansicht zu fuellen.",
+                    actionTitle: "Stop planen",
+                    actionSystemImage: "calendar.badge.plus"
+                ) {
+                    viewModel.showCreateStop()
+                }
             } else {
                 ForEach(timeline.days) { day in
                     VStack(alignment: .leading, spacing: 8) {
@@ -187,8 +201,15 @@ struct TripDetailView: View {
             let mapStops = viewModel.mapStops(for: trip)
 
             if mapStops.isEmpty {
-                Text("Noch keine Orte mit Koordinaten")
-                    .foregroundStyle(.secondary)
+                tripDetailEmptyState(
+                    title: "Noch keine Orte mit Koordinaten",
+                    systemImage: "map",
+                    message: "Fuege einem Stop einen Ort oder Koordinaten hinzu.",
+                    actionTitle: "Stop mit Ort hinzufügen",
+                    actionSystemImage: "mappin.and.ellipse"
+                ) {
+                    viewModel.showCreateStop()
+                }
             } else {
                 Map(initialPosition: .region(viewModel.mapRegion(for: mapStops))) {
                     ForEach(mapStops) { mapStop in
@@ -220,8 +241,15 @@ struct TripDetailView: View {
             let documents = viewModel.sortedDocuments(for: trip)
 
             if documents.isEmpty {
-                Text("Noch keine Reiseunterlagen")
-                    .foregroundStyle(.secondary)
+                tripDetailEmptyState(
+                    title: "Noch keine Reiseunterlagen",
+                    systemImage: "doc.text",
+                    message: "Importiere Tickets, Buchungen oder Reservierungen fuer diesen Trip.",
+                    actionTitle: "Unterlage hinzufügen",
+                    actionSystemImage: "doc.badge.plus"
+                ) {
+                    viewModel.showCreateDocument()
+                }
             } else {
                 ForEach(documents) { document in
                     documentRow(document)
@@ -247,6 +275,32 @@ struct TripDetailView: View {
                 Label("Reiseunterlage hinzufügen", systemImage: "doc.badge.plus")
             }
         }
+    }
+
+    private func tripDetailEmptyState(
+        title: String,
+        systemImage: String,
+        message: String,
+        actionTitle: String,
+        actionSystemImage: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(title, systemImage: systemImage)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+
+            Text(message)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Button(action: action) {
+                Label(actionTitle, systemImage: actionSystemImage)
+            }
+            .font(.footnote)
+        }
+        .padding(.vertical, 4)
     }
 
     private func timelineStopRow(_ stop: Stop, isUnscheduled: Bool) -> some View {

@@ -298,14 +298,33 @@ struct TripDetailView: View {
         NavigationLink {
             TravelDocumentDetailView(document: document)
         } label: {
-            VStack(alignment: .leading, spacing: 4) {
+            let badges = viewModel.documentMetadataBadges(for: document)
+
+            VStack(alignment: .leading, spacing: 6) {
                 Text(document.title)
                     .font(.headline)
 
-                if let subtitle = viewModel.documentSubtitle(for: document) {
-                    Text(subtitle)
-                        .font(.subheadline)
+                if badges.isEmpty == false {
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 8) {
+                            ForEach(badges) { badge in
+                                documentMetadataBadge(badge)
+                            }
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(badges) { badge in
+                                documentMetadataBadge(badge)
+                            }
+                        }
+                    }
+                }
+
+                if let detailText = viewModel.documentListDetailText(for: document) {
+                    Text(detailText)
+                        .font(.footnote)
                         .foregroundStyle(.secondary)
+                        .lineLimit(2)
                 }
 
                 if document.extractedText.isEmpty == false {
@@ -317,6 +336,13 @@ struct TripDetailView: View {
             }
             .padding(.vertical, 4)
         }
+    }
+
+    private func documentMetadataBadge(_ badge: DocumentMetadataBadge) -> some View {
+        Label(badge.title, systemImage: badge.systemImage)
+            .font(.caption)
+            .fontWeight(.semibold)
+            .foregroundStyle(badge.isHighlighted ? Color.blue : Color.secondary)
     }
 
     private var startDateBinding: Binding<Date> {

@@ -419,6 +419,58 @@ struct TripFlowTests {
         #expect(viewModel.documentSubtitle(for: document) == "Bahn - Zug ICE100 - 15.07.2026 08:30 - OCR vorhanden")
     }
 
+    @Test func tripDetailDocumentMetadataBadgesHighlightTypeDateAndOCRStatus() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Hotel",
+            documentType: "Hotel",
+            extractedText: "Check-in 15.07.2026 ab 14:30 Uhr",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        let badges = viewModel.documentMetadataBadges(for: document)
+
+        #expect(badges == [
+            DocumentMetadataBadge(title: "Hotel", systemImage: "doc.text", isHighlighted: false),
+            DocumentMetadataBadge(title: "15.07.2026 14:30", systemImage: "calendar", isHighlighted: true),
+            DocumentMetadataBadge(title: "OCR vorhanden", systemImage: "text.viewfinder", isHighlighted: true)
+        ])
+    }
+
+    @Test func tripDetailDocumentMetadataBadgesShowOpenOCRWithoutExtractedText() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Hotel",
+            fileName: "hotel.pdf",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        let badges = viewModel.documentMetadataBadges(for: document)
+
+        #expect(badges == [
+            DocumentMetadataBadge(title: "OCR offen", systemImage: "doc.badge.ellipsis", isHighlighted: false)
+        ])
+    }
+
+    @Test func tripDetailDocumentListDetailTextShowsSupportingMetadataOnly() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Boarding Pass",
+            documentType: "Flug",
+            fileName: "boarding.pdf",
+            extractedText: """
+            Boarding LH 2034 Gate A12 05/08/26 09:05
+            Buchungsnummer: XYZ789
+            """,
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        #expect(viewModel.documentListDetailText(for: document) == "boarding.pdf - Flug LH2034 - Ref XYZ789")
+    }
+
     @Test func tripDetailPrefillsNewStopFromDocumentSchedule() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let document = try travelDocumentService.createDocument(

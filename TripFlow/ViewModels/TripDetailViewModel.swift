@@ -9,6 +9,16 @@ import Foundation
 import MapKit
 import SwiftData
 
+struct DocumentMetadataBadge: Equatable, Identifiable {
+    let title: String
+    let systemImage: String
+    let isHighlighted: Bool
+
+    var id: String {
+        "\(systemImage)-\(title)"
+    }
+}
+
 @Observable
 final class TripDetailViewModel {
     var title: String
@@ -228,6 +238,50 @@ final class TripDetailViewModel {
             + [Self.ocrStatusText(for: document)]
 
         return details.isEmpty ? nil : details.joined(separator: " - ")
+    }
+
+    func documentListDetailText(for document: TravelDocument) -> String? {
+        let parseResult = travelDocumentParserService.parse(document.extractedText)
+        let details = Self.documentListDetailParts(for: document, parseResult: parseResult)
+
+        return details.isEmpty ? nil : details.joined(separator: " - ")
+    }
+
+    func documentMetadataBadges(for document: TravelDocument) -> [DocumentMetadataBadge] {
+        let parseResult = travelDocumentParserService.parse(document.extractedText)
+        var badges: [DocumentMetadataBadge] = []
+
+        if document.documentType.isEmpty == false {
+            badges.append(
+                DocumentMetadataBadge(
+                    title: document.documentType,
+                    systemImage: "doc.text",
+                    isHighlighted: false
+                )
+            )
+        }
+
+        if let parsedDateText = Self.parsedDateText(from: parseResult) {
+            badges.append(
+                DocumentMetadataBadge(
+                    title: parsedDateText,
+                    systemImage: "calendar",
+                    isHighlighted: true
+                )
+            )
+        }
+
+        let hasExtractedText = document.extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+
+        badges.append(
+            DocumentMetadataBadge(
+                title: Self.ocrStatusText(for: document),
+                systemImage: hasExtractedText ? "text.viewfinder" : "doc.badge.ellipsis",
+                isHighlighted: hasExtractedText
+            )
+        )
+
+        return badges
     }
 
     func parsedScheduleDate(for document: TravelDocument, calendar: Calendar = .current) -> Date? {
@@ -456,6 +510,25 @@ final class TripDetailViewModel {
     }
 
     private static func documentParsedSubtitleParts(from parseResult: TravelDocumentParseResult) -> [String] {
+        var details = documentReferenceSubtitleParts(from: parseResult)
+
+        if let parsedDateText = parsedDateText(from: parseResult) {
+            details.append(parsedDateText)
+        }
+
+        return details
+    }
+
+    private static func documentListDetailParts(
+        for document: TravelDocument,
+        parseResult: TravelDocumentParseResult
+    ) -> [String] {
+        [
+            document.fileName
+        ].filter { $0.isEmpty == false } + documentReferenceSubtitleParts(from: parseResult)
+    }
+
+    private static func documentReferenceSubtitleParts(from parseResult: TravelDocumentParseResult) -> [String] {
         var details: [String] = []
 
         if let flightNumber = parseResult.flightNumber {
@@ -472,10 +545,6 @@ final class TripDetailViewModel {
 
         if let suggestedLocationName = parseResult.suggestedLocationName {
             details.append("Ort \(suggestedLocationName)")
-        }
-
-        if let parsedDateText = parsedDateText(from: parseResult) {
-            details.append(parsedDateText)
         }
 
         return details

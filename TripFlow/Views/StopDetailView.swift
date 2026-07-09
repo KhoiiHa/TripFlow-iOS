@@ -19,6 +19,8 @@ struct StopDetailView: View {
 
     var body: some View {
         Form {
+            overviewSection
+
             Section("Stop") {
                 TextField("Name", text: $viewModel.title)
                 TextField("Ort optional", text: $viewModel.locationName)
@@ -82,6 +84,59 @@ struct StopDetailView: View {
                 .disabled(viewModel.canSave == false)
             }
         }
+    }
+
+    private var overviewSection: some View {
+        Section("Übersicht") {
+            stopOverviewRow(
+                title: "Zeitpunkt",
+                value: viewModel.scheduleSummaryText,
+                detail: viewModel.scheduledDateText,
+                systemImage: "calendar"
+            )
+
+            stopOverviewRow(
+                title: "Ort",
+                value: viewModel.locationSummaryText,
+                systemImage: "mappin.and.ellipse"
+            )
+
+            stopOverviewRow(
+                title: "Koordinaten",
+                value: viewModel.coordinateSummaryText,
+                systemImage: "location"
+            )
+        }
+    }
+
+    private func stopOverviewRow(
+        title: String,
+        value: String,
+        detail: String? = nil,
+        systemImage: String
+    ) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: systemImage)
+                .foregroundStyle(.blue)
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text(value)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+
+                if let detail {
+                    Text(detail)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(.vertical, 2)
     }
 
     private var scheduledDateBinding: Binding<Date> {

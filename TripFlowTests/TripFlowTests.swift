@@ -1279,6 +1279,33 @@ struct TripFlowTests {
         #expect(viewModel.errorMessage == nil)
     }
 
+    @Test func stopDetailSummarizesOpenPlanningValues() {
+        let viewModel = StopDetailViewModel(stop: Stop(title: "Hotel"))
+
+        #expect(viewModel.scheduleSummaryText == "Zeitpunkt offen")
+        #expect(viewModel.scheduledDateText == nil)
+        #expect(viewModel.locationSummaryText == "Ort offen")
+        #expect(viewModel.coordinateSummaryText == "Koordinaten offen")
+    }
+
+    @Test func stopDetailSummarizesEditedLocationAndCoordinates() {
+        let viewModel = StopDetailViewModel(stop: Stop(title: "Hotel"))
+        viewModel.locationName = "  Berlin Mitte  "
+        viewModel.latitudeText = " 52.52 "
+        viewModel.longitudeText = " 13.405 "
+
+        #expect(viewModel.locationSummaryText == "Berlin Mitte")
+        #expect(viewModel.coordinateSummaryText == "52.52, 13.405")
+    }
+
+    @Test func stopDetailSummarizesPartialCoordinates() {
+        let viewModel = StopDetailViewModel(stop: Stop(title: "Hotel"))
+        viewModel.latitudeText = "52.52"
+        viewModel.longitudeText = "   "
+
+        #expect(viewModel.coordinateSummaryText == "Koordinaten unvollstaendig")
+    }
+
     @Test func timelineGroupsScheduledStopsByDay() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let calendar = testCalendar()

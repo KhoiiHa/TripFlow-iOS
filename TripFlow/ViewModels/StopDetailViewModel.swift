@@ -22,6 +22,39 @@ final class StopDetailViewModel {
         saveDisabledReason == nil
     }
 
+    var scheduleSummaryText: String {
+        hasScheduledDate && scheduledDate != nil ? "Geplant" : "Zeitpunkt offen"
+    }
+
+    var scheduledDateText: String? {
+        guard hasScheduledDate, let scheduledDate else {
+            return nil
+        }
+
+        return scheduledDate.formatted(.dateTime.day().month().year().hour().minute())
+    }
+
+    var locationSummaryText: String {
+        let trimmedLocation = locationName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return trimmedLocation.isEmpty ? "Ort offen" : trimmedLocation
+    }
+
+    var coordinateSummaryText: String {
+        let trimmedLatitude = latitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedLongitude = longitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if trimmedLatitude.isEmpty && trimmedLongitude.isEmpty {
+            return "Koordinaten offen"
+        }
+
+        if trimmedLatitude.isEmpty || trimmedLongitude.isEmpty {
+            return "Koordinaten unvollstaendig"
+        }
+
+        return "\(trimmedLatitude), \(trimmedLongitude)"
+    }
+
     var saveDisabledReason: String? {
         if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return "Name fuer den Stop fehlt."

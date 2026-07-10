@@ -12,6 +12,18 @@ Der Fokus liegt auf einem klaren Portfolio-Use-Case: Reiseunterlagen koennen als
 
 Die Screenshots zeigen den aktuellen MVP-Kern: Trip-Status auf einen Blick, Timeline mit Kartenbezug und den Review-Schritt fuer erkannte Reisedaten aus einer Reiseunterlage.
 
+## Portfolio-Flow
+
+Der wichtigste MVP-Flow ist bewusst klein gehalten:
+
+1. Reiseunterlage mit OCR-Text erfassen
+2. Reisedaten wie Datum, Uhrzeit, Ort und Referenz erkennen
+3. Stop-Vorschlag in einer Review-Ansicht pruefen
+4. Name, Datum und Uhrzeit bei Bedarf korrigieren
+5. Stop erst nach Bestaetigung im Trip speichern
+
+Damit zeigt TripFlow nicht nur CRUD, sondern einen nachvollziehbaren produktnahen Workflow: Aus unstrukturiertem Dokumenttext entsteht ein geplanter Reise-Stop.
+
 ## MVP-Funktionen
 
 - Trips mit optionalem Start- und Enddatum erstellen und bearbeiten

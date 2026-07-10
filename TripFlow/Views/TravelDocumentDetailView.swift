@@ -187,8 +187,8 @@ struct TravelDocumentDetailView: View {
                     LabeledContent("Stop-Name", value: viewModel.stopSuggestionTitle)
 
                     if let scheduledDate = viewModel.stopSuggestionScheduledDate {
-                        LabeledContent("Datum", value: scheduledDate.formatted(.dateTime.day().month().year()))
-                        LabeledContent("Uhrzeit", value: scheduledDate.formatted(.dateTime.hour().minute()))
+                        LabeledContent("Datum", value: DateDisplayFormatter.date(scheduledDate))
+                        LabeledContent("Uhrzeit", value: DateDisplayFormatter.time(scheduledDate))
                     }
 
                     if viewModel.stopSuggestionLocationName.isEmpty == false {

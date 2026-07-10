@@ -71,6 +71,6 @@ struct TripPlanningStatusService {
     }
 
     private func format(date: Date) -> String {
-        date.formatted(.dateTime.day().month().year())
+        DateDisplayFormatter.date(date)
     }
 }

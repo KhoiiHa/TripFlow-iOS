@@ -31,7 +31,7 @@ final class StopDetailViewModel {
             return nil
         }
 
-        return scheduledDate.formatted(.dateTime.day().month().year().hour().minute())
+        return DateDisplayFormatter.dateTime(scheduledDate)
     }
 
     var locationSummaryText: String {

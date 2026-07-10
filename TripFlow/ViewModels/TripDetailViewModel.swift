@@ -211,18 +211,22 @@ final class TripDetailViewModel {
         }
 
         if let scheduledDate = stop.scheduledDate {
-            details.append(scheduledDate.formatted(.dateTime.day().month().year().hour().minute()))
+            details.append(DateDisplayFormatter.dateTime(scheduledDate))
         }
 
         return details.isEmpty ? nil : details.joined(separator: " - ")
     }
 
     func timelineDayTitle(for day: TimelineDay) -> String {
-        day.date.formatted(.dateTime.weekday(.wide).day().month().year())
+        DateDisplayFormatter.weekdayDate(day.date)
     }
 
     func timelineTimeTitle(for stop: Stop) -> String? {
-        stop.scheduledDate?.formatted(.dateTime.hour().minute())
+        guard let scheduledDate = stop.scheduledDate else {
+            return nil
+        }
+
+        return DateDisplayFormatter.time(scheduledDate)
     }
 
     func sortedDocuments(for trip: Trip) -> [TravelDocument] {

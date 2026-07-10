@@ -435,8 +435,8 @@ struct TripDetailView: View {
                         LabeledContent("Stop-Name", value: viewModel.newStopTitle)
 
                         if let scheduledDate = viewModel.newStopScheduledDate {
-                            LabeledContent("Datum", value: scheduledDate.formatted(.dateTime.day().month().year()))
-                            LabeledContent("Uhrzeit", value: scheduledDate.formatted(.dateTime.hour().minute()))
+                            LabeledContent("Datum", value: DateDisplayFormatter.date(scheduledDate))
+                            LabeledContent("Uhrzeit", value: DateDisplayFormatter.time(scheduledDate))
                         }
 
                         if viewModel.newStopLocationName.isEmpty == false {

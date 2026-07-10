@@ -20,6 +20,15 @@ struct TripFlowTests {
     private let travelDocumentParserService = TravelDocumentParserService()
     private let tripPlanningStatusService = TripPlanningStatusService()
 
+    @Test func dateDisplayFormatterUsesGermanReadableText() {
+        let scheduledDate = makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: testCalendar())
+
+        #expect(DateDisplayFormatter.date(scheduledDate, calendar: testCalendar()) == "15. Juli 2026")
+        #expect(DateDisplayFormatter.time(scheduledDate, calendar: testCalendar()) == "14:30")
+        #expect(DateDisplayFormatter.dateTime(scheduledDate, calendar: testCalendar()) == "15. Juli 2026, 14:30")
+        #expect(DateDisplayFormatter.weekdayDate(scheduledDate, calendar: testCalendar()) == "Mittwoch, 15. Juli 2026")
+    }
+
     @Test func createTripTrimsTitle() throws {
         let trip = try tripService.createTrip(title: "  Berlin 2026  ")
 
@@ -128,6 +137,18 @@ struct TripFlowTests {
         #expect(summary.status.title == "Ready")
         #expect(summary.stopCountText == "1 Stop")
         #expect(summary.documentCountText == "1 Unterlage")
+    }
+
+    @Test func tripPlanningStatusFormatsDateRangeInGerman() throws {
+        let trip = try tripService.createTrip(
+            title: "Berlin",
+            startDate: makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: testCalendar()),
+            endDate: makeDate(year: 2026, month: 7, day: 18, hour: 9, minute: 5, calendar: testCalendar())
+        )
+
+        let summary = tripPlanningStatusService.summary(for: trip)
+
+        #expect(summary.dateRangeText == "15. Juli 2026 - 18. Juli 2026")
     }
 
     @Test func createTripRejectsEndDateBeforeStartDate() {
@@ -892,6 +913,7 @@ struct TripFlowTests {
 
         #expect(items.map(\.id) == ["stopTitle", "schedule", "location", "reference"])
         #expect(items.first { $0.id == "stopTitle" }?.value == "Flug")
+        #expect(items.first { $0.id == "schedule" }?.value == "5. August 2026, 09:05")
         #expect(items.first { $0.id == "location" }?.value == "Gate A12")
         #expect(items.first { $0.id == "reference" }?.value == "Flug LH2034 - Ref XYZ789")
     }
@@ -1359,6 +1381,18 @@ struct TripFlowTests {
         #expect(viewModel.scheduledDateText == nil)
         #expect(viewModel.locationSummaryText == "Ort offen")
         #expect(viewModel.coordinateSummaryText == "Koordinaten offen")
+    }
+
+    @Test func stopDetailFormatsScheduledDateInGerman() {
+        let calendar = Calendar.current
+        let stop = Stop(
+            title: "Hotel",
+            scheduledDate: makeDate(year: 2026, month: 7, day: 15, hour: 14, minute: 30, calendar: calendar)
+        )
+        let viewModel = StopDetailViewModel(stop: stop)
+
+        #expect(viewModel.scheduleSummaryText == "Geplant")
+        #expect(viewModel.scheduledDateText == "15. Juli 2026, 14:30")
     }
 
     @Test func stopDetailSummarizesEditedLocationAndCoordinates() {

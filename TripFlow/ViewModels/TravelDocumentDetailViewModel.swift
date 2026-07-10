@@ -160,13 +160,7 @@ final class TravelDocumentDetailViewModel {
     }
 
     private func scheduleText(for scheduledDate: Date, calendar: Calendar) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-
-        return formatter.string(from: scheduledDate)
+        DateDisplayFormatter.dateTime(scheduledDate, calendar: calendar)
     }
 
     func parsedSuggestedStopTitle(calendar: Calendar = .current) -> String? {

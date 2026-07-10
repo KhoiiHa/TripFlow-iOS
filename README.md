@@ -4,6 +4,12 @@ TripFlow ist eine lokale iOS-App fuer Reiseplanung. Der MVP hilft dabei, Trips, 
 
 Der Fokus liegt auf einem klaren Portfolio-Use-Case: Reiseunterlagen koennen als Text erfasst werden, TripFlow erkennt relevante Reisedaten daraus und macht daraus pruefbare Stop-Vorschlaege.
 
+## Demo
+
+![TripFlow Demo](screenshots/tripflow-demo.gif)
+
+Der kurze Ablauf zeigt Trip-Status, Tagesplanung mit Karte und den Review-Schritt fuer erkannte Reisedaten aus einer Reiseunterlage.
+
 ## Screenshots
 
 | Trip-Uebersicht | Trip-Detail | Dokument-Review |

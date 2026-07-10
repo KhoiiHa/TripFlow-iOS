@@ -34,6 +34,8 @@ Damit zeigt TripFlow nicht nur CRUD, sondern einen nachvollziehbaren produktnahe
 
 TripFlow ist aktuell als kompakter Portfolio-MVP abgeschlossen. Der Stand zeigt den Kernnutzen der App lokal und ohne externe Infrastruktur: Trips planen, Stops organisieren, Reiseunterlagen auswerten und erkannte Daten vor dem Speichern bewusst pruefen.
 
+Der markierte MVP-Stand ist im [Changelog](CHANGELOG.md) dokumentiert.
+
 Weitere Ideen wie echter Dokumentimport, VisionKit-Scanner-Ausbau, Widgets oder App Intents gehoeren bewusst nicht mehr in diesen MVP-Abschluss, sondern in spaetere, getrennte Iterationen.
 
 ## MVP-Funktionen

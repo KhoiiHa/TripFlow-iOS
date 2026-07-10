@@ -40,6 +40,8 @@ Der stabile MVP-Snapshot ist als Git-Tag [`v0.1.0-mvp`](https://github.com/Khoii
 
 Eine kurze Einordnung der Produkt- und Architekturentscheidungen steht in der [Case Study](CASE_STUDY.md).
 
+Fertige Kurztexte fuer GitHub, LinkedIn und Bewerbung stehen im [Portfolio Pitch](PORTFOLIO_PITCH.md).
+
 Weitere Ideen wie echter Dokumentimport, VisionKit-Scanner-Ausbau, Widgets oder App Intents gehoeren bewusst nicht mehr in diesen MVP-Abschluss, sondern in spaetere, getrennte Iterationen.
 
 ## MVP-Funktionen

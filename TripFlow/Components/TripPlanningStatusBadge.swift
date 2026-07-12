@@ -11,13 +11,20 @@ struct TripPlanningStatusBadge: View {
     let status: TripPlanningStatus
 
     var body: some View {
-        Text(status.title)
-            .font(.caption)
-            .fontWeight(.semibold)
-            .foregroundStyle(foregroundStyle)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(foregroundStyle.opacity(0.12), in: Capsule())
+        HStack(spacing: 5) {
+            Circle()
+                .fill(foregroundStyle)
+                .frame(width: 6, height: 6)
+
+            Text(status.title)
+                .lineLimit(1)
+        }
+        .font(.caption)
+        .fontWeight(.semibold)
+        .foregroundStyle(foregroundStyle)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background(foregroundStyle.opacity(0.12), in: Capsule())
     }
 
     private var foregroundStyle: Color {

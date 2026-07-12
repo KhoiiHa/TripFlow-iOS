@@ -116,24 +116,43 @@ struct TripDetailView: View {
         Section("Planungsstand") {
             let summary = viewModel.planningSummary(for: trip)
 
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(summary.dateRangeText)
-                        .font(.subheadline)
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "airplane.departure")
+                    .font(.title3)
+                    .foregroundStyle(.blue)
+                    .frame(width: 34, height: 34)
+                    .background(.blue.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
 
-                    HStack(spacing: 8) {
-                        Label(summary.stopCountText, systemImage: "mappin.and.ellipse")
-                        Label(summary.documentCountText, systemImage: "doc.text")
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Reiseplan")
+                                .font(.headline)
+
+                            Label(summary.dateRangeText, systemImage: "calendar")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        TripPlanningStatusBadge(status: summary.status)
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 8) {
+                            planningMetric(summary.stopCountText, systemImage: "mappin.and.ellipse")
+                            planningMetric(summary.documentCountText, systemImage: "doc.text")
+                        }
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            planningMetric(summary.stopCountText, systemImage: "mappin.and.ellipse")
+                            planningMetric(summary.documentCountText, systemImage: "doc.text")
+                        }
+                    }
                 }
-
-                Spacer()
-
-                TripPlanningStatusBadge(status: summary.status)
             }
-            .padding(.vertical, 2)
+            .padding(.vertical, 6)
         }
     }
 
@@ -229,7 +248,11 @@ struct TripDetailView: View {
                     }
                 }
                 .frame(height: 220)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(.quaternary, lineWidth: 1)
+                }
 
                 ForEach(mapStops) { mapStop in
                     VStack(alignment: .leading, spacing: 3) {
@@ -297,39 +320,56 @@ struct TripDetailView: View {
         actionSystemImage: String,
         action: @escaping () -> Void
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(title, systemImage: systemImage)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: systemImage)
+                    .font(.headline)
+                    .foregroundStyle(.blue)
+                    .frame(width: 30, height: 30)
+                    .background(.blue.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
 
-            Text(message)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+
+                    Text(message)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
 
             Button(action: action) {
                 Label(actionTitle, systemImage: actionSystemImage)
             }
             .font(.footnote)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
     }
 
     private func timelineStopRow(_ stop: Stop, isUnscheduled: Bool) -> some View {
         NavigationLink {
             StopDetailView(stop: stop)
         } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
                 Text(viewModel.timelineTimeTitle(for: stop) ?? "Offen")
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundStyle(isUnscheduled ? Color.secondary : Color.blue)
-                    .frame(width: 52, alignment: .leading)
+                    .foregroundStyle(isUnscheduled ? Color.secondary : Color.white)
+                    .frame(width: 56, alignment: .center)
+                    .padding(.vertical, 5)
+                    .background(
+                        isUnscheduled ? Color.secondary.opacity(0.12) : Color.blue,
+                        in: Capsule()
+                    )
 
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 5) {
                     Text(stop.title)
                         .font(.subheadline)
                         .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
 
                     if stop.locationName.isEmpty == false {
                         Label(stop.locationName, systemImage: "mappin.and.ellipse")
@@ -338,7 +378,7 @@ struct TripDetailView: View {
                     }
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, 7)
         }
     }
 
@@ -409,6 +449,28 @@ struct TripDetailView: View {
             .font(.caption)
             .fontWeight(.semibold)
             .foregroundStyle(badge.isHighlighted ? Color.blue : Color.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                badge.isHighlighted ? Color.blue.opacity(0.10) : Color.secondary.opacity(0.10),
+                in: Capsule()
+            )
+    }
+
+    private func planningMetric(_ title: String, systemImage: String) -> some View {
+        Label {
+            Text(title)
+                .lineLimit(1)
+        } icon: {
+            Image(systemName: systemImage)
+                .foregroundStyle(.blue)
+        }
+        .font(.caption)
+        .fontWeight(.medium)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 6)
+        .background(.blue.opacity(0.08), in: Capsule())
     }
 
     private var startDateBinding: Binding<Date> {

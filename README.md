@@ -18,6 +18,14 @@ Der kurze Ablauf zeigt Trip-Status, Tagesplanung mit Karte und den Review-Schrit
 
 Die Screenshots zeigen den aktuellen MVP-Kern: Trip-Status auf einen Blick, Timeline mit Kartenbezug und den Review-Schritt fuer erkannte Reisedaten aus einer Reiseunterlage.
 
+## Technische Highlights
+
+- OCR-assisted Stop Creation: Aus Dokumenttext entsteht ein pruefbarer Stop-Vorschlag statt einer stillen Auto-Speicherung.
+- Testbare Business-Logik: Parser, Timeline, Statuslogik und Validierung liegen ausserhalb der SwiftUI-Views.
+- Local-first MVP: SwiftData speichert Trips, Stops und Reiseunterlagen ohne Account, Cloud oder externe APIs.
+- MapKit-Integration: Stops mit Koordinaten werden als reiserelevante Kartenpunkte dargestellt.
+- Reproduzierbarer Showcase: Screenshots werden ueber einen UI-Test mit stabilen Demo-Daten erzeugt.
+
 ## Portfolio-Flow
 
 Der wichtigste MVP-Flow ist bewusst klein gehalten:
@@ -93,6 +101,12 @@ Ausfuehren:
 
 ```sh
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test -project TripFlow.xcodeproj -scheme TripFlow -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:TripFlowTests
+```
+
+Portfolio-Screenshots neu erzeugen:
+
+```sh
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test -project TripFlow.xcodeproj -scheme TripFlow -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:TripFlowUITests/TripFlowUITests/testCapturePortfolioScreenshots
 ```
 
 ## MVP-Grenzen

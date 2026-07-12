@@ -40,4 +40,54 @@ final class TripFlowUITests: XCTestCase {
             XCUIApplication().launch()
         }
     }
+
+    @MainActor
+    func testCapturePortfolioScreenshots() throws {
+        let screenshotDirectory = ProcessInfo.processInfo.environment["TRIPFLOW_SCREENSHOT_DIR"]
+            ?? "/tmp/tripflow-screenshots-new"
+
+        let app = XCUIApplication()
+        app.launchArguments = ["-tripflowDemoData"]
+        app.launch()
+
+        let tripTitle = app.staticTexts["Berlin Sommertrip"]
+        XCTAssertTrue(tripTitle.waitForExistence(timeout: 8))
+        Thread.sleep(forTimeInterval: 1.5)
+        try saveScreenshot(named: "01-trip-list", in: screenshotDirectory)
+
+        tripTitle.tap()
+
+        let hotelStop = app.staticTexts["Hotel Check-in"]
+        XCTAssertTrue(hotelStop.waitForExistence(timeout: 8))
+        Thread.sleep(forTimeInterval: 1.0)
+        try saveScreenshot(named: "02-trip-detail", in: screenshotDirectory)
+
+        let documentTitle = app.staticTexts["Hotelbuchung"]
+        scrollUntilVisible(documentTitle, in: app)
+        XCTAssertTrue(documentTitle.waitForExistence(timeout: 4))
+        documentTitle.tap()
+
+        let reviewTitle = app.staticTexts["Review"]
+        XCTAssertTrue(reviewTitle.waitForExistence(timeout: 8))
+        Thread.sleep(forTimeInterval: 1.0)
+        try saveScreenshot(named: "03-document-review", in: screenshotDirectory)
+    }
+
+    private func scrollUntilVisible(_ element: XCUIElement, in app: XCUIApplication, maxAttempts: Int = 6) {
+        var attempts = 0
+
+        while element.exists == false && attempts < maxAttempts {
+            app.swipeUp()
+            attempts += 1
+        }
+    }
+
+    private func saveScreenshot(named name: String, in directory: String) throws {
+        let directoryURL = URL(fileURLWithPath: directory, isDirectory: true)
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+
+        let screenshotURL = directoryURL.appendingPathComponent("\(name).png")
+        let screenshot = XCUIScreen.main.screenshot()
+        try screenshot.pngRepresentation.write(to: screenshotURL, options: .atomic)
+    }
 }

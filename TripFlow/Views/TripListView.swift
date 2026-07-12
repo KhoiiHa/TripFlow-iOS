@@ -93,7 +93,7 @@ struct TripListView: View {
                     Label(summary.dateRangeText, systemImage: "calendar")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                        .lineLimit(2)
                 }
 
                 Spacer()

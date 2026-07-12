@@ -25,6 +25,12 @@ struct TripFlowApp: App {
         }
     }()
 
+    init() {
+        #if DEBUG
+        DemoDataSeeder.seedIfRequested(in: sharedModelContainer)
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

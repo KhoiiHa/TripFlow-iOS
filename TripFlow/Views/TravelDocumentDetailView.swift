@@ -55,19 +55,7 @@ struct TravelDocumentDetailView: View {
         if summaryItems.isEmpty == false {
             Section("Review") {
                 ForEach(summaryItems) { item in
-                    Label {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(item.title)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-
-                            Text(item.value)
-                                .font(.subheadline)
-                        }
-                    } icon: {
-                        Image(systemName: item.systemImage)
-                            .foregroundStyle(.blue)
-                    }
+                    recognitionSummaryRow(item)
                 }
             }
         }
@@ -78,27 +66,51 @@ struct TravelDocumentDetailView: View {
         if viewModel.hasParsedTravelData() {
             Section("Erkannte Reisedaten") {
                 if let suggestedStopTitle = viewModel.parsedSuggestedStopTitle() {
-                    LabeledContent("Stop-Vorschlag", value: suggestedStopTitle)
+                    parsedTravelDataRow(
+                        title: "Stop-Vorschlag",
+                        value: suggestedStopTitle,
+                        systemImage: "mappin.and.ellipse"
+                    )
                 }
 
                 if let parsedScheduleText = viewModel.parsedScheduleText() {
-                    LabeledContent("Datum und Uhrzeit", value: parsedScheduleText)
+                    parsedTravelDataRow(
+                        title: "Datum und Uhrzeit",
+                        value: parsedScheduleText,
+                        systemImage: "calendar"
+                    )
                 }
 
                 if let suggestedLocationName = viewModel.parsedSuggestedLocationName() {
-                    LabeledContent("Ort", value: suggestedLocationName)
+                    parsedTravelDataRow(
+                        title: "Ort",
+                        value: suggestedLocationName,
+                        systemImage: "location"
+                    )
                 }
 
                 if let flightNumber = viewModel.parsedFlightNumber() {
-                    LabeledContent("Flugnummer", value: flightNumber)
+                    parsedTravelDataRow(
+                        title: "Flugnummer",
+                        value: flightNumber,
+                        systemImage: "airplane"
+                    )
                 }
 
                 if let trainNumber = viewModel.parsedTrainNumber() {
-                    LabeledContent("Zugnummer", value: trainNumber)
+                    parsedTravelDataRow(
+                        title: "Zugnummer",
+                        value: trainNumber,
+                        systemImage: "tram"
+                    )
                 }
 
                 if let reservationNumber = viewModel.parsedReservationNumber() {
-                    LabeledContent("Reservierungsnummer", value: reservationNumber)
+                    parsedTravelDataRow(
+                        title: "Reservierungsnummer",
+                        value: reservationNumber,
+                        systemImage: "number"
+                    )
                 }
 
                 if viewModel.canShowStopSuggestionAction(for: document) {
@@ -141,16 +153,25 @@ struct TravelDocumentDetailView: View {
         message: String
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label(title, systemImage: systemImage)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: systemImage)
+                    .font(.headline)
+                    .foregroundStyle(.blue)
+                    .frame(width: 30, height: 30)
+                    .background(.blue.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
 
-            Text(message)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+
+                    Text(message)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
     }
 
     @ViewBuilder
@@ -184,15 +205,42 @@ struct TravelDocumentDetailView: View {
         NavigationStack {
             Form {
                 Section("Aus Dokument erkannt") {
-                    LabeledContent("Stop-Name", value: viewModel.stopSuggestionTitle)
+                    Label {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Bitte prüfe die erkannten Werte, bevor daraus ein Stop gespeichert wird.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "checklist")
+                            .foregroundStyle(.blue)
+                    }
+
+                    stopSuggestionReviewRow(
+                        title: "Stop-Name",
+                        value: viewModel.stopSuggestionTitle,
+                        systemImage: "mappin.and.ellipse"
+                    )
 
                     if let scheduledDate = viewModel.stopSuggestionScheduledDate {
-                        LabeledContent("Datum", value: DateDisplayFormatter.date(scheduledDate))
-                        LabeledContent("Uhrzeit", value: DateDisplayFormatter.time(scheduledDate))
+                        stopSuggestionReviewRow(
+                            title: "Datum",
+                            value: DateDisplayFormatter.date(scheduledDate),
+                            systemImage: "calendar"
+                        )
+                        stopSuggestionReviewRow(
+                            title: "Uhrzeit",
+                            value: DateDisplayFormatter.time(scheduledDate),
+                            systemImage: "clock"
+                        )
                     }
 
                     if viewModel.stopSuggestionLocationName.isEmpty == false {
-                        LabeledContent("Ort", value: viewModel.stopSuggestionLocationName)
+                        stopSuggestionReviewRow(
+                            title: "Ort",
+                            value: viewModel.stopSuggestionLocationName,
+                            systemImage: "location"
+                        )
                     }
                 }
 
@@ -212,20 +260,14 @@ struct TravelDocumentDetailView: View {
                     || viewModel.stopSuggestionTrainNumber.isEmpty == false
                     || viewModel.stopSuggestionReservationNumber.isEmpty == false {
                     Section("Dokumentquelle") {
-                        if viewModel.stopSuggestionDocumentType.isEmpty == false {
-                            LabeledContent("Dokumenttyp", value: viewModel.stopSuggestionDocumentType)
-                        }
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 8) {
+                                stopSuggestionSourceBadges
+                            }
 
-                        if viewModel.stopSuggestionFlightNumber.isEmpty == false {
-                            LabeledContent("Flugnummer", value: viewModel.stopSuggestionFlightNumber)
-                        }
-
-                        if viewModel.stopSuggestionTrainNumber.isEmpty == false {
-                            LabeledContent("Zugnummer", value: viewModel.stopSuggestionTrainNumber)
-                        }
-
-                        if viewModel.stopSuggestionReservationNumber.isEmpty == false {
-                            LabeledContent("Reservierungsnummer", value: viewModel.stopSuggestionReservationNumber)
+                            VStack(alignment: .leading, spacing: 8) {
+                                stopSuggestionSourceBadges
+                            }
                         }
 
                         if viewModel.stopSuggestionTextExcerpt.isEmpty == false {
@@ -269,6 +311,79 @@ struct TravelDocumentDetailView: View {
                 }
             }
         }
+    }
+
+    private func recognitionSummaryRow(_ item: TravelDocumentRecognitionSummaryItem) -> some View {
+        Label {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.title)
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+
+                Text(item.value)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+            }
+        } icon: {
+            Image(systemName: item.systemImage)
+                .font(.headline)
+                .foregroundStyle(.blue)
+                .frame(width: 30, height: 30)
+                .background(.blue.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func parsedTravelDataRow(title: String, value: String, systemImage: String) -> some View {
+        Label {
+            LabeledContent(title, value: value)
+                .font(.subheadline)
+        } icon: {
+            Image(systemName: systemImage)
+                .foregroundStyle(.blue)
+        }
+        .padding(.vertical, 2)
+    }
+
+    private func stopSuggestionReviewRow(title: String, value: String, systemImage: String) -> some View {
+        Label {
+            LabeledContent(title, value: value)
+                .font(.subheadline)
+        } icon: {
+            Image(systemName: systemImage)
+                .foregroundStyle(.blue)
+        }
+    }
+
+    @ViewBuilder
+    private var stopSuggestionSourceBadges: some View {
+        if viewModel.stopSuggestionDocumentType.isEmpty == false {
+            sourceBadge(viewModel.stopSuggestionDocumentType, systemImage: "doc.text")
+        }
+
+        if viewModel.stopSuggestionFlightNumber.isEmpty == false {
+            sourceBadge(viewModel.stopSuggestionFlightNumber, systemImage: "airplane")
+        }
+
+        if viewModel.stopSuggestionTrainNumber.isEmpty == false {
+            sourceBadge(viewModel.stopSuggestionTrainNumber, systemImage: "tram")
+        }
+
+        if viewModel.stopSuggestionReservationNumber.isEmpty == false {
+            sourceBadge(viewModel.stopSuggestionReservationNumber, systemImage: "number")
+        }
+    }
+
+    private func sourceBadge(_ title: String, systemImage: String) -> some View {
+        Label(title, systemImage: systemImage)
+            .font(.caption)
+            .fontWeight(.semibold)
+            .foregroundStyle(.blue)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(.blue.opacity(0.10), in: Capsule())
     }
 
     private var stopSuggestionScheduledDateBinding: Binding<Date> {

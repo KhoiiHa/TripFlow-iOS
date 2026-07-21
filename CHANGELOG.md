@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.2.0 - 2026-07-21
+
+TripFlow verarbeitet Reiseunterlagen jetzt als durchgaengigen, lokal-first Workflow.
+
+### Hinzugefuegt
+
+- Bildimport mit lokaler Vision-Texterkennung
+- PDF-Import mit eingebettetem Text und OCR-Fallback
+- Dokumentenscan ueber VisionKit
+- Review erkannter Reisedaten bereits im Dokumententwurf
+- Flug- und Zugnummern als Kontext fuer Stop-Vorschlaege
+- Zweistufige Bestaetigung: erst Unterlage speichern, dann Stop pruefen und erstellen
+- Tests fuer Import, OCR, Parsing und die ausbleibende stille Stop-Speicherung
+- Reproduzierbarer Portfolio-Screenshot der finalen Stop-Review
+
+### Weiterhin bewusst nicht enthalten
+
+- Automatische Stop-Speicherung ohne Nutzerbestaetigung
+- Cloud-OCR oder Upload externer Reisedokumente
+- Account-, Sync- oder Booking-Funktionen
+
 ## v0.1.0-mvp - 2026-07-10
 
 TripFlow ist als kompakter Portfolio-MVP abgeschlossen.

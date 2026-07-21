@@ -69,8 +69,17 @@ final class TripFlowUITests: XCTestCase {
 
         let reviewTitle = app.staticTexts["Review"]
         XCTAssertTrue(reviewTitle.waitForExistence(timeout: 8))
+
+        let createStopSuggestion = app.buttons["Stop daraus erstellen"]
+        scrollUntilVisible(createStopSuggestion, in: app)
+        XCTAssertTrue(createStopSuggestion.waitForExistence(timeout: 4))
+        createStopSuggestion.tap()
+
+        let stopReviewTitle = app.navigationBars["Neuer Stop"]
+        XCTAssertTrue(stopReviewTitle.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Vor dem Speichern bearbeiten"].exists)
         Thread.sleep(forTimeInterval: 1.0)
-        try saveScreenshot(named: "03-document-review", in: screenshotDirectory)
+        try saveScreenshot(named: "03-stop-review", in: screenshotDirectory)
     }
 
     private func scrollUntilVisible(_ element: XCUIElement, in app: XCUIApplication, maxAttempts: Int = 6) {

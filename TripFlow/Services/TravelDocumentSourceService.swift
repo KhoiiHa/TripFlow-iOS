@@ -13,6 +13,7 @@ enum TravelDocumentSourceError: Error, Equatable {
     case unreadableFile
     case unreadableScanPage
     case previewUnavailable
+    case exportUnavailable
     case sourceTooLarge(maximumByteCount: Int)
     case tooManyScanPages(maximumPageCount: Int)
 }
@@ -28,6 +29,8 @@ protocol TravelDocumentSourcePreparing {
 protocol TravelDocumentSourcePreviewing {
     func temporaryPreviewURL(for data: Data, fileName: String) throws -> URL
     func removeTemporaryPreview(at url: URL)
+    func temporaryExportURL(for data: Data, fileName: String) throws -> URL
+    func removeTemporaryExport(at url: URL)
 }
 
 struct TravelDocumentSourceService: TravelDocumentSourcePreparing, TravelDocumentSourcePreviewing {
@@ -165,6 +168,34 @@ struct TravelDocumentSourceService: TravelDocumentSourcePreparing, TravelDocumen
 
     func removeTemporaryPreview(at url: URL) {
         try? FileManager.default.removeItem(at: url)
+    }
+
+    func temporaryExportURL(for data: Data, fileName: String) throws -> URL {
+        guard data.isEmpty == false else {
+            throw TravelDocumentSourceError.exportUnavailable
+        }
+
+        let exportDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("TripFlowExports", isDirectory: true)
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let sourceFileName = URL(fileURLWithPath: fileName).lastPathComponent
+        let exportFileName = sourceFileName.isEmpty ? "Reiseunterlage" : sourceFileName
+        let exportURL = exportDirectory.appendingPathComponent(exportFileName)
+
+        do {
+            try FileManager.default.createDirectory(
+                at: exportDirectory,
+                withIntermediateDirectories: true
+            )
+            try data.write(to: exportURL, options: .atomic)
+            return exportURL
+        } catch {
+            throw TravelDocumentSourceError.exportUnavailable
+        }
+    }
+
+    func removeTemporaryExport(at url: URL) {
+        try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
     }
 
     private func validateSourceByteCount(_ byteCount: Int) throws {

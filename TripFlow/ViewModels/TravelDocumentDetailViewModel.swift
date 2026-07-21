@@ -36,6 +36,9 @@ final class TravelDocumentDetailViewModel {
     var isShowingSourcePreview = false
     var sourcePreviewURL: URL?
     var sourcePreviewErrorMessage: String?
+    var isShowingSourceShare = false
+    var sourceShareURL: URL?
+    var sourceShareErrorMessage: String?
     let hasSourceDocument: Bool
 
     var canSave: Bool {
@@ -121,6 +124,36 @@ final class TravelDocumentDetailViewModel {
 
         sourcePreviewURL = nil
         isShowingSourcePreview = false
+    }
+
+    func showSourceShare(for document: TravelDocument) {
+        sourceShareErrorMessage = nil
+
+        guard let sourceData = document.sourceData else {
+            sourceShareErrorMessage = "Fuer diese Reiseunterlage ist keine Originaldatei gespeichert."
+            return
+        }
+
+        do {
+            sourceShareURL = try travelDocumentSourcePreviewService.temporaryExportURL(
+                for: sourceData,
+                fileName: document.fileName
+            )
+            isShowingSourceShare = true
+        } catch {
+            sourceShareURL = nil
+            isShowingSourceShare = false
+            sourceShareErrorMessage = "Die Originaldatei konnte nicht zum Teilen vorbereitet werden."
+        }
+    }
+
+    func dismissSourceShare() {
+        if let sourceShareURL {
+            travelDocumentSourcePreviewService.removeTemporaryExport(at: sourceShareURL)
+        }
+
+        sourceShareURL = nil
+        isShowingSourceShare = false
     }
 
     func parsedTravelDocumentResult(calendar: Calendar = .current) -> TravelDocumentParseResult {

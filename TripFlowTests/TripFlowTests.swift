@@ -1051,6 +1051,24 @@ struct TripFlowTests {
         #expect(FileManager.default.fileExists(atPath: previewURL.path) == false)
     }
 
+    @Test @MainActor func documentSourceCreatesNamedExportAndRemovesTemporaryDirectory() throws {
+        let sourceData = Data("shared document".utf8)
+        let service = TravelDocumentSourceService()
+
+        let exportURL = try service.temporaryExportURL(
+            for: sourceData,
+            fileName: "/imports/boarding-pass.pdf"
+        )
+
+        #expect(exportURL.lastPathComponent == "boarding-pass.pdf")
+        #expect(try Data(contentsOf: exportURL) == sourceData)
+
+        let exportDirectory = exportURL.deletingLastPathComponent()
+        service.removeTemporaryExport(at: exportURL)
+
+        #expect(FileManager.default.fileExists(atPath: exportDirectory.path) == false)
+    }
+
     @Test @MainActor func tripDetailStoresImportedSourceOnlyAfterDocumentConfirmation() async throws {
         let sourceData = Data("original document".utf8)
         let trip = try tripService.createTrip(title: "Berlin")
@@ -1433,6 +1451,49 @@ struct TripFlowTests {
         #expect(viewModel.isShowingSourcePreview == false)
         #expect(viewModel.sourcePreviewURL == nil)
         #expect(viewModel.sourcePreviewErrorMessage == "Fuer diese Reiseunterlage ist keine Originaldatei gespeichert.")
+    }
+
+    @Test @MainActor func documentDetailSharesAndCleansUpOriginalFile() {
+        let sourceData = Data("original pdf".utf8)
+        let exportURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("boarding-pass.pdf")
+        let previewService = TravelDocumentSourcePreviewServiceStub(
+            result: .success(exportURL)
+        )
+        let document = TravelDocument(
+            title: "Boarding Pass",
+            fileName: "boarding-pass.pdf",
+            sourceData: sourceData
+        )
+        let viewModel = TravelDocumentDetailViewModel(
+            document: document,
+            travelDocumentSourcePreviewService: previewService
+        )
+
+        viewModel.showSourceShare(for: document)
+
+        #expect(viewModel.isShowingSourceShare)
+        #expect(viewModel.sourceShareURL == exportURL)
+        #expect(viewModel.sourceShareErrorMessage == nil)
+        #expect(previewService.receivedExportData == sourceData)
+        #expect(previewService.receivedExportFileName == "boarding-pass.pdf")
+
+        viewModel.dismissSourceShare()
+
+        #expect(viewModel.isShowingSourceShare == false)
+        #expect(viewModel.sourceShareURL == nil)
+        #expect(previewService.removedExportURL == exportURL)
+    }
+
+    @Test @MainActor func documentDetailExplainsMissingOriginalForSharing() {
+        let document = TravelDocument(title: "Manuelle Notiz")
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        viewModel.showSourceShare(for: document)
+
+        #expect(viewModel.isShowingSourceShare == false)
+        #expect(viewModel.sourceShareURL == nil)
+        #expect(viewModel.sourceShareErrorMessage == "Fuer diese Reiseunterlage ist keine Originaldatei gespeichert.")
     }
 
     @Test func documentDetailParsesScheduleFromExtractedText() {
@@ -2285,6 +2346,9 @@ private final class TravelDocumentSourcePreviewServiceStub: TravelDocumentSource
     private(set) var receivedData: Data?
     private(set) var receivedFileName: String?
     private(set) var removedURL: URL?
+    private(set) var receivedExportData: Data?
+    private(set) var receivedExportFileName: String?
+    private(set) var removedExportURL: URL?
 
     init(result: Result<URL, Error>) {
         self.result = result
@@ -2298,6 +2362,16 @@ private final class TravelDocumentSourcePreviewServiceStub: TravelDocumentSource
 
     func removeTemporaryPreview(at url: URL) {
         removedURL = url
+    }
+
+    func temporaryExportURL(for data: Data, fileName: String) throws -> URL {
+        receivedExportData = data
+        receivedExportFileName = fileName
+        return try result.get()
+    }
+
+    func removeTemporaryExport(at url: URL) {
+        removedExportURL = url
     }
 }
 

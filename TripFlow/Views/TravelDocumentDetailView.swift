@@ -49,6 +49,16 @@ struct TravelDocumentDetailView: View {
                     .ignoresSafeArea()
             }
         }
+        .sheet(
+            isPresented: $viewModel.isShowingSourceShare,
+            onDismiss: {
+                viewModel.dismissSourceShare()
+            }
+        ) {
+            if let sourceShareURL = viewModel.sourceShareURL {
+                TravelDocumentShareSheet(url: sourceShareURL)
+            }
+        }
     }
 
     private var documentEditingSection: some View {
@@ -62,6 +72,12 @@ struct TravelDocumentDetailView: View {
                     viewModel.showSourcePreview(for: document)
                 } label: {
                     Label("Original anzeigen", systemImage: "doc.text.magnifyingglass")
+                }
+
+                Button {
+                    viewModel.showSourceShare(for: document)
+                } label: {
+                    Label("Original teilen", systemImage: "square.and.arrow.up")
                 }
             }
         }
@@ -215,6 +231,12 @@ struct TravelDocumentDetailView: View {
 
         if let sourcePreviewErrorMessage = viewModel.sourcePreviewErrorMessage {
             Text(sourcePreviewErrorMessage)
+                .font(.footnote)
+                .foregroundStyle(.red)
+        }
+
+        if let sourceShareErrorMessage = viewModel.sourceShareErrorMessage {
+            Text(sourceShareErrorMessage)
                 .font(.footnote)
                 .foregroundStyle(.red)
         }

@@ -50,7 +50,7 @@ final class TripDetailViewModel {
     var isShowingCreateDocument = false
     var isShowingDocumentImporter = false
     var isShowingDocumentScanner = false
-    var isImportingDocumentImage = false
+    var isImportingDocument = false
     var documentErrorMessage: String?
     var documentImportSuccessMessage: String?
 
@@ -97,7 +97,7 @@ final class TripDetailViewModel {
     }
 
     var createDocumentDisabledReason: String? {
-        if isImportingDocumentImage {
+        if isImportingDocument {
             return "Texterkennung laeuft."
         }
 
@@ -379,7 +379,7 @@ final class TripDetailViewModel {
         documentImportSuccessMessage = nil
         isShowingDocumentImporter = false
         isShowingDocumentScanner = false
-        isImportingDocumentImage = false
+        isImportingDocument = false
         isShowingCreateDocument = true
     }
 
@@ -392,7 +392,7 @@ final class TripDetailViewModel {
         documentImportSuccessMessage = nil
         isShowingDocumentImporter = false
         isShowingDocumentScanner = false
-        isImportingDocumentImage = false
+        isImportingDocument = false
         isShowingCreateDocument = false
     }
 
@@ -428,8 +428,8 @@ final class TripDetailViewModel {
             return
         }
 
-        isImportingDocumentImage = true
-        defer { isImportingDocumentImage = false }
+        isImportingDocument = true
+        defer { isImportingDocument = false }
 
         do {
             let recognizedText = try await travelDocumentOCRService.recognizeText(inImageData: pages)
@@ -452,7 +452,7 @@ final class TripDetailViewModel {
         }
     }
 
-    func importDocumentImage(from result: Result<[URL], Error>) async {
+    func importDocumentFile(from result: Result<[URL], Error>) async {
         documentErrorMessage = nil
         documentImportSuccessMessage = nil
 
@@ -463,21 +463,21 @@ final class TripDetailViewModel {
             urls = selectedURLs
         case let .failure(error):
             if (error as? CocoaError)?.code != .userCancelled {
-                documentErrorMessage = "Das Bild konnte nicht importiert werden."
+                documentErrorMessage = "Die Datei konnte nicht importiert werden."
             }
             return
         }
 
         guard let url = urls.first else {
-            documentErrorMessage = "Es wurde kein Bild ausgewaehlt."
+            documentErrorMessage = "Es wurde keine Datei ausgewaehlt."
             return
         }
 
-        isImportingDocumentImage = true
-        defer { isImportingDocumentImage = false }
+        isImportingDocument = true
+        defer { isImportingDocument = false }
 
         do {
-            let recognizedText = try await travelDocumentOCRService.recognizeText(inImageAt: url)
+            let recognizedText = try await travelDocumentOCRService.recognizeText(inDocumentAt: url)
             newDocumentFileName = url.lastPathComponent
             newDocumentExtractedText = recognizedText
 
@@ -488,8 +488,10 @@ final class TripDetailViewModel {
             documentImportSuccessMessage = "Text wurde erkannt und kann vor dem Speichern geprueft werden."
         } catch TravelDocumentOCRError.unreadableImage {
             documentErrorMessage = "Die ausgewaehlte Bilddatei konnte nicht gelesen werden."
+        } catch TravelDocumentOCRError.unreadablePDF {
+            documentErrorMessage = "Die ausgewaehlte PDF-Datei konnte nicht gelesen werden."
         } catch TravelDocumentOCRError.noRecognizedText {
-            documentErrorMessage = "Im ausgewaehlten Bild wurde kein Text erkannt."
+            documentErrorMessage = "In der ausgewaehlten Datei wurde kein Text erkannt."
         } catch {
             documentErrorMessage = "Die Texterkennung ist fehlgeschlagen."
         }
@@ -574,7 +576,7 @@ final class TripDetailViewModel {
             documentImportSuccessMessage = nil
             isShowingDocumentImporter = false
             isShowingDocumentScanner = false
-            isImportingDocumentImage = false
+            isImportingDocument = false
             isShowingCreateDocument = false
         } catch TravelDocumentValidationError.emptyTitle {
             documentErrorMessage = "Bitte gib einen Namen fuer die Reiseunterlage ein."

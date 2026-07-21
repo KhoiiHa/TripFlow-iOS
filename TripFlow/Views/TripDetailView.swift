@@ -661,7 +661,7 @@ struct TripDetailView: View {
                         } label: {
                             Label("Dokument scannen", systemImage: "doc.viewfinder")
                         }
-                        .disabled(viewModel.isImportingDocumentImage)
+                        .disabled(viewModel.isImportingDocument)
                     } else {
                         Text("Dokumentscans sind auf diesem Geraet nicht verfuegbar.")
                             .font(.footnote)
@@ -672,13 +672,13 @@ struct TripDetailView: View {
                         viewModel.showDocumentImporter()
                     } label: {
                         Label(
-                            viewModel.isImportingDocumentImage ? "Text wird erkannt" : "Bild importieren",
-                            systemImage: "photo.badge.plus"
+                            viewModel.isImportingDocument ? "Text wird erkannt" : "Datei importieren",
+                            systemImage: "doc.badge.plus"
                         )
                     }
-                    .disabled(viewModel.isImportingDocumentImage)
+                    .disabled(viewModel.isImportingDocument)
 
-                    if viewModel.isImportingDocumentImage {
+                    if viewModel.isImportingDocument {
                         ProgressView("Texterkennung laeuft ...")
                     }
                 }
@@ -716,7 +716,7 @@ struct TripDetailView: View {
                     Button("Abbrechen") {
                         viewModel.cancelCreateDocument()
                     }
-                    .disabled(viewModel.isImportingDocumentImage)
+                    .disabled(viewModel.isImportingDocument)
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
@@ -727,7 +727,7 @@ struct TripDetailView: View {
                 }
             }
             .presentationDetents([.medium, .large])
-            .interactiveDismissDisabled(viewModel.isImportingDocumentImage)
+            .interactiveDismissDisabled(viewModel.isImportingDocument)
             .fullScreenCover(isPresented: $viewModel.isShowingDocumentScanner) {
                 TravelDocumentScannerView(
                     onScan: { pages in
@@ -746,11 +746,11 @@ struct TripDetailView: View {
             }
             .fileImporter(
                 isPresented: $viewModel.isShowingDocumentImporter,
-                allowedContentTypes: [.image],
+                allowedContentTypes: [.image, .pdf],
                 allowsMultipleSelection: false
             ) { result in
                 Task {
-                    await viewModel.importDocumentImage(from: result)
+                    await viewModel.importDocumentFile(from: result)
                 }
             }
         }

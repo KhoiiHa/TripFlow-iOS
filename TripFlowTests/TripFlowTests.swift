@@ -9,6 +9,7 @@ import Foundation
 import MapKit
 import SwiftData
 import Testing
+import UIKit
 @testable import TripFlow
 
 struct TripFlowTests {
@@ -786,14 +787,14 @@ struct TripFlowTests {
             )
         )
 
-        await viewModel.importDocumentImage(from: .success([imageURL]))
+        await viewModel.importDocumentFile(from: .success([imageURL]))
 
         #expect(viewModel.newDocumentTitle == "boarding-pass")
         #expect(viewModel.newDocumentFileName == "boarding-pass.png")
         #expect(viewModel.newDocumentExtractedText == "Flug LH 2034 am 05.08.2026 um 09:05")
         #expect(viewModel.documentImportSuccessMessage == "Text wurde erkannt und kann vor dem Speichern geprueft werden.")
         #expect(viewModel.documentErrorMessage == nil)
-        #expect(viewModel.isImportingDocumentImage == false)
+        #expect(viewModel.isImportingDocument == false)
         #expect(trip.documents.isEmpty)
     }
 
@@ -806,16 +807,16 @@ struct TripFlowTests {
         viewModel.newDocumentTitle = "Bestehender Entwurf"
         viewModel.newDocumentExtractedText = "Manuell erfasster Text"
 
-        await viewModel.importDocumentImage(
+        await viewModel.importDocumentFile(
             from: .success([URL(fileURLWithPath: "/tmp/leer.png")])
         )
 
         #expect(viewModel.newDocumentTitle == "Bestehender Entwurf")
         #expect(viewModel.newDocumentFileName.isEmpty)
         #expect(viewModel.newDocumentExtractedText == "Manuell erfasster Text")
-        #expect(viewModel.documentErrorMessage == "Im ausgewaehlten Bild wurde kein Text erkannt.")
+        #expect(viewModel.documentErrorMessage == "In der ausgewaehlten Datei wurde kein Text erkannt.")
         #expect(viewModel.documentImportSuccessMessage == nil)
-        #expect(viewModel.isImportingDocumentImage == false)
+        #expect(viewModel.isImportingDocument == false)
         #expect(trip.documents.isEmpty)
     }
 
@@ -837,7 +838,7 @@ struct TripFlowTests {
         #expect(viewModel.documentImportSuccessMessage == "2 gescannte Seiten wurden erkannt und koennen geprueft werden.")
         #expect(viewModel.documentErrorMessage == nil)
         #expect(viewModel.isShowingDocumentScanner == false)
-        #expect(viewModel.isImportingDocumentImage == false)
+        #expect(viewModel.isImportingDocument == false)
         #expect(trip.documents.isEmpty)
     }
 
@@ -887,6 +888,50 @@ struct TripFlowTests {
         #expect(viewModel.documentErrorMessage == "Das Dokument konnte nicht gescannt werden.")
     }
 
+    @Test @MainActor func tripDetailImportsPDFForReviewWithoutSavingDocument() async throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let pdfURL = URL(fileURLWithPath: "/tmp/hotel-booking.pdf")
+        let viewModel = TripDetailViewModel(
+            trip: trip,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(
+                recognizedText: "Check-in 15.08.2026 um 15:00"
+            )
+        )
+
+        await viewModel.importDocumentFile(from: .success([pdfURL]))
+
+        #expect(viewModel.newDocumentTitle == "hotel-booking")
+        #expect(viewModel.newDocumentFileName == "hotel-booking.pdf")
+        #expect(viewModel.newDocumentExtractedText == "Check-in 15.08.2026 um 15:00")
+        #expect(viewModel.documentErrorMessage == nil)
+        #expect(viewModel.isImportingDocument == false)
+        #expect(trip.documents.isEmpty)
+    }
+
+    @Test @MainActor func documentOCRReadsEmbeddedTextFromPDF() async throws {
+        let pdfURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tripflow-\(UUID().uuidString).pdf")
+        defer { try? FileManager.default.removeItem(at: pdfURL) }
+
+        let renderer = UIGraphicsPDFRenderer(
+            bounds: CGRect(x: 0, y: 0, width: 600, height: 800)
+        )
+        let pdfData = renderer.pdfData { context in
+            context.beginPage()
+            ("Flug LH 2034 am 05.08.2026 um 09:05" as NSString).draw(
+                at: CGPoint(x: 40, y: 40),
+                withAttributes: [.font: UIFont.systemFont(ofSize: 18)]
+            )
+        }
+        try pdfData.write(to: pdfURL)
+
+        let recognizedText = try await TravelDocumentOCRService()
+            .recognizeText(inDocumentAt: pdfURL)
+
+        #expect(recognizedText.contains("Flug LH 2034"))
+        #expect(recognizedText.contains("05.08.2026"))
+    }
+
     @Test @MainActor func tripDetailCreateDocumentClearsOldErrorOnNewAttempt() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let viewModel = TripDetailViewModel(trip: trip)
@@ -912,7 +957,7 @@ struct TripFlowTests {
         viewModel.documentImportSuccessMessage = "Importiert"
         viewModel.isShowingDocumentImporter = true
         viewModel.isShowingDocumentScanner = true
-        viewModel.isImportingDocumentImage = true
+        viewModel.isImportingDocument = true
         viewModel.isShowingCreateDocument = true
 
         viewModel.cancelCreateDocument()
@@ -925,7 +970,7 @@ struct TripFlowTests {
         #expect(viewModel.documentImportSuccessMessage == nil)
         #expect(viewModel.isShowingDocumentImporter == false)
         #expect(viewModel.isShowingDocumentScanner == false)
-        #expect(viewModel.isImportingDocumentImage == false)
+        #expect(viewModel.isImportingDocument == false)
         #expect(viewModel.isShowingCreateDocument == false)
     }
 
@@ -1762,7 +1807,7 @@ private struct TravelDocumentOCRServiceStub: TravelDocumentTextRecognizing {
         self.error = error
     }
 
-    func recognizeText(inImageAt url: URL) async throws -> String {
+    func recognizeText(inDocumentAt url: URL) async throws -> String {
         if let error {
             throw error
         }

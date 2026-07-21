@@ -1496,6 +1496,172 @@ struct TripFlowTests {
         #expect(viewModel.sourceShareErrorMessage == "Fuer diese Reiseunterlage ist keine Originaldatei gespeichert.")
     }
 
+    @Test @MainActor func documentDetailPreparesImportedSourceReplacementWithoutChangingDocument() async {
+        let oldSourceData = Data("old source".utf8)
+        let newSourceData = Data("new source".utf8)
+        let document = TravelDocument(
+            title: "Boarding Pass",
+            fileName: "old-ticket.pdf",
+            extractedText: "Alter OCR-Text",
+            sourceData: oldSourceData,
+            sourceFingerprint: "old-fingerprint"
+        )
+        let viewModel = TravelDocumentDetailViewModel(
+            document: document,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(
+                recognizedText: "Flug LH 2034 am 05.08.2026 um 09:05"
+            ),
+            travelDocumentSourceService: TravelDocumentSourceServiceStub(
+                sourceData: newSourceData,
+                sourceFingerprint: "new-fingerprint"
+            )
+        )
+
+        await viewModel.importSourceReplacement(
+            from: .success([URL(fileURLWithPath: "/tmp/new-ticket.pdf")])
+        )
+
+        #expect(viewModel.isShowingSourceReplacementReview)
+        #expect(viewModel.sourceReplacementFileName == "new-ticket.pdf")
+        #expect(viewModel.sourceReplacementExtractedText == "Flug LH 2034 am 05.08.2026 um 09:05")
+        #expect(viewModel.canConfirmSourceReplacement)
+        #expect(document.fileName == "old-ticket.pdf")
+        #expect(document.extractedText == "Alter OCR-Text")
+        #expect(document.sourceData == oldSourceData)
+        #expect(document.sourceFingerprint == "old-fingerprint")
+    }
+
+    @Test @MainActor func documentDetailCancelsSourceReplacementWithoutChangingDocument() async {
+        let oldSourceData = Data("old source".utf8)
+        let document = TravelDocument(
+            title: "Boarding Pass",
+            fileName: "old-ticket.pdf",
+            extractedText: "Alter OCR-Text",
+            sourceData: oldSourceData,
+            sourceFingerprint: "old-fingerprint"
+        )
+        let viewModel = TravelDocumentDetailViewModel(
+            document: document,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(recognizedText: "Neuer OCR-Text"),
+            travelDocumentSourceService: TravelDocumentSourceServiceStub()
+        )
+
+        await viewModel.importSourceReplacement(
+            from: .success([URL(fileURLWithPath: "/tmp/new-ticket.pdf")])
+        )
+        viewModel.cancelSourceReplacementReview()
+
+        #expect(viewModel.isShowingSourceReplacementReview == false)
+        #expect(viewModel.canConfirmSourceReplacement == false)
+        #expect(viewModel.sourceReplacementFileName.isEmpty)
+        #expect(viewModel.sourceReplacementExtractedText.isEmpty)
+        #expect(document.fileName == "old-ticket.pdf")
+        #expect(document.extractedText == "Alter OCR-Text")
+        #expect(document.sourceData == oldSourceData)
+        #expect(document.sourceFingerprint == "old-fingerprint")
+    }
+
+    @Test @MainActor func documentDetailReplacesSourceOnlyAfterReviewConfirmation() async {
+        let oldSourceData = Data("old source".utf8)
+        let newSourceData = Data("new source".utf8)
+        let document = TravelDocument(
+            title: "Boarding Pass",
+            fileName: "old-ticket.pdf",
+            extractedText: "Alter OCR-Text",
+            sourceData: oldSourceData,
+            sourceFingerprint: "old-fingerprint"
+        )
+        let viewModel = TravelDocumentDetailViewModel(
+            document: document,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(recognizedText: "Erkannter Text"),
+            travelDocumentSourceService: TravelDocumentSourceServiceStub(
+                sourceData: newSourceData,
+                sourceFingerprint: "new-fingerprint"
+            )
+        )
+
+        await viewModel.importSourceReplacement(
+            from: .success([URL(fileURLWithPath: "/tmp/new-ticket.pdf")])
+        )
+        viewModel.sourceReplacementExtractedText = "Korrigierter OCR-Text"
+        viewModel.confirmSourceReplacement(for: document)
+
+        #expect(viewModel.isShowingSourceReplacementReview == false)
+        #expect(viewModel.sourceReplacementSuccessMessage == "Die Originaldatei wurde ersetzt.")
+        #expect(viewModel.fileName == "new-ticket.pdf")
+        #expect(viewModel.extractedText == "Korrigierter OCR-Text")
+        #expect(document.fileName == "new-ticket.pdf")
+        #expect(document.extractedText == "Korrigierter OCR-Text")
+        #expect(document.sourceData == newSourceData)
+        #expect(document.sourceFingerprint == "new-fingerprint")
+    }
+
+    @Test @MainActor func documentDetailRejectsDuplicateSourceReplacementWithoutChangingDocument() async throws {
+        let oldSourceData = Data("old source".utf8)
+        let duplicateSourceData = Data("duplicate source".utf8)
+        let trip = try tripService.createTrip(title: "Berlin")
+        let document = try travelDocumentService.createDocument(
+            title: "Boarding Pass",
+            fileName: "old-ticket.pdf",
+            extractedText: "Alter OCR-Text",
+            sourceData: oldSourceData,
+            sourceFingerprint: "old-fingerprint",
+            for: trip
+        )
+        _ = try travelDocumentService.createDocument(
+            title: "Hotel",
+            sourceData: duplicateSourceData,
+            sourceFingerprint: "duplicate-fingerprint",
+            for: trip
+        )
+        let viewModel = TravelDocumentDetailViewModel(
+            document: document,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(recognizedText: "Neuer OCR-Text"),
+            travelDocumentSourceService: TravelDocumentSourceServiceStub(
+                sourceData: duplicateSourceData,
+                sourceFingerprint: "duplicate-fingerprint"
+            )
+        )
+
+        await viewModel.importSourceReplacement(
+            from: .success([URL(fileURLWithPath: "/tmp/duplicate.pdf")])
+        )
+        viewModel.confirmSourceReplacement(for: document)
+
+        #expect(viewModel.isShowingSourceReplacementReview)
+        #expect(viewModel.sourceReplacementErrorMessage == "Diese Originaldatei ist in diesem Trip bereits gespeichert.")
+        #expect(document.fileName == "old-ticket.pdf")
+        #expect(document.extractedText == "Alter OCR-Text")
+        #expect(document.sourceData == oldSourceData)
+        #expect(document.sourceFingerprint == "old-fingerprint")
+    }
+
+    @Test @MainActor func documentDetailPreparesScannedSourceReplacementForReview() async {
+        let newSourceData = Data("scan pdf".utf8)
+        let document = TravelDocument(
+            title: "Boarding Pass",
+            sourceData: Data("old source".utf8),
+            sourceFingerprint: "old-fingerprint"
+        )
+        let viewModel = TravelDocumentDetailViewModel(
+            document: document,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(recognizedText: "Scan OCR-Text"),
+            travelDocumentSourceService: TravelDocumentSourceServiceStub(
+                sourceData: newSourceData,
+                sourceFingerprint: "scan-fingerprint"
+            )
+        )
+        viewModel.isShowingSourceReplacementScanner = true
+
+        await viewModel.importScannedSourceReplacementPages([Data([1]), Data([2])])
+
+        #expect(viewModel.isShowingSourceReplacementScanner == false)
+        #expect(viewModel.isShowingSourceReplacementReview)
+        #expect(viewModel.sourceReplacementFileName == "Dokumentenscan.pdf")
+        #expect(viewModel.sourceReplacementExtractedText == "Scan OCR-Text")
+        #expect(document.sourceFingerprint == "old-fingerprint")
+    }
+
     @Test func documentDetailParsesScheduleFromExtractedText() {
         let document = TravelDocument(
             title: "Hotel",

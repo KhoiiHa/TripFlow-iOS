@@ -26,10 +26,11 @@ struct TravelDocumentService {
 
         if let sourceFingerprint,
            let sourceData,
-           trip.documents.contains(where: { document in
-               document.sourceFingerprint == sourceFingerprint
-                   || (document.sourceFingerprint == nil && document.sourceData == sourceData)
-           }) {
+           containsDuplicateSource(
+               in: trip,
+               sourceData: sourceData,
+               sourceFingerprint: sourceFingerprint
+           ) {
             throw TravelDocumentValidationError.duplicateSource
         }
 
@@ -72,6 +73,31 @@ struct TravelDocumentService {
         document.trip?.updatedAt = Date()
     }
 
+    func replaceSource(
+        of document: TravelDocument,
+        fileName: String,
+        extractedText: String,
+        sourceData: Data,
+        sourceFingerprint: String
+    ) throws {
+        if let trip = document.trip,
+           containsDuplicateSource(
+               in: trip,
+               sourceData: sourceData,
+               sourceFingerprint: sourceFingerprint,
+               excluding: document
+           ) {
+            throw TravelDocumentValidationError.duplicateSource
+        }
+
+        document.fileName = fileName.trimmingCharacters(in: .whitespacesAndNewlines)
+        document.extractedText = extractedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        document.sourceData = sourceData
+        document.sourceFingerprint = sourceFingerprint
+        document.updatedAt = Date()
+        document.trip?.updatedAt = Date()
+    }
+
     private func validate(
         title: String,
         documentType: String,
@@ -90,5 +116,18 @@ struct TravelDocumentService {
             fileName.trimmingCharacters(in: .whitespacesAndNewlines),
             extractedText.trimmingCharacters(in: .whitespacesAndNewlines)
         )
+    }
+
+    private func containsDuplicateSource(
+        in trip: Trip,
+        sourceData: Data,
+        sourceFingerprint: String,
+        excluding excludedDocument: TravelDocument? = nil
+    ) -> Bool {
+        trip.documents.contains { document in
+            document !== excludedDocument
+                && (document.sourceFingerprint == sourceFingerprint
+                    || (document.sourceFingerprint == nil && document.sourceData == sourceData))
+        }
     }
 }

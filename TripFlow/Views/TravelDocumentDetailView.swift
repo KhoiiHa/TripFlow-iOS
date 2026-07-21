@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct TravelDocumentDetailView: View {
     @Environment(\.modelContext) private var modelContext
@@ -59,6 +60,34 @@ struct TravelDocumentDetailView: View {
                 TravelDocumentShareSheet(url: sourceShareURL)
             }
         }
+        .sheet(isPresented: $viewModel.isShowingSourceReplacementReview) {
+            sourceReplacementReviewSheet
+        }
+        .fullScreenCover(isPresented: $viewModel.isShowingSourceReplacementScanner) {
+            TravelDocumentScannerView(
+                onScan: { pages in
+                    Task {
+                        await viewModel.importScannedSourceReplacementPages(pages)
+                    }
+                },
+                onCancel: {
+                    viewModel.cancelSourceReplacementScanner()
+                },
+                onFailure: {
+                    viewModel.failSourceReplacementScanner()
+                }
+            )
+            .ignoresSafeArea()
+        }
+        .fileImporter(
+            isPresented: $viewModel.isShowingSourceReplacementImporter,
+            allowedContentTypes: [.image, .pdf],
+            allowsMultipleSelection: false
+        ) { result in
+            Task {
+                await viewModel.importSourceReplacement(from: result)
+            }
+        }
     }
 
     private var documentEditingSection: some View {
@@ -79,6 +108,25 @@ struct TravelDocumentDetailView: View {
                 } label: {
                     Label("Original teilen", systemImage: "square.and.arrow.up")
                 }
+
+                Menu {
+                    Button {
+                        viewModel.showSourceReplacementImporter()
+                    } label: {
+                        Label("Datei importieren", systemImage: "doc.badge.plus")
+                    }
+
+                    if TravelDocumentScannerView.isSupported {
+                        Button {
+                            viewModel.showSourceReplacementScanner()
+                        } label: {
+                            Label("Neu scannen", systemImage: "doc.viewfinder")
+                        }
+                    }
+                } label: {
+                    Label("Original ersetzen", systemImage: "arrow.triangle.2.circlepath")
+                }
+                .disabled(viewModel.isPreparingSourceReplacement)
             }
         }
     }
@@ -241,6 +289,23 @@ struct TravelDocumentDetailView: View {
                 .foregroundStyle(.red)
         }
 
+        if viewModel.isPreparingSourceReplacement {
+            ProgressView("Ersatzdokument wird erkannt ...")
+        }
+
+        if let sourceReplacementErrorMessage = viewModel.sourceReplacementErrorMessage,
+           viewModel.isShowingSourceReplacementReview == false {
+            Text(sourceReplacementErrorMessage)
+                .font(.footnote)
+                .foregroundStyle(.red)
+        }
+
+        if let sourceReplacementSuccessMessage = viewModel.sourceReplacementSuccessMessage {
+            Text(sourceReplacementSuccessMessage)
+                .font(.footnote)
+                .foregroundStyle(.green)
+        }
+
         if let saveDisabledReason = viewModel.saveDisabledReason {
             Text(saveDisabledReason)
                 .font(.footnote)
@@ -357,6 +422,53 @@ struct TravelDocumentDetailView: View {
                     .disabled(viewModel.canCreateStopSuggestion == false)
                 }
             }
+        }
+    }
+
+    private var sourceReplacementReviewSheet: some View {
+        NavigationStack {
+            Form {
+                Section("Neue Originaldatei") {
+                    Label {
+                        Text("Das bisherige Original bleibt erhalten, bis du den Ersatz bestaetigst.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    } icon: {
+                        Image(systemName: "checklist")
+                            .foregroundStyle(.blue)
+                    }
+
+                    TextField("Dateiname", text: $viewModel.sourceReplacementFileName)
+                }
+
+                Section("Erkannter Text pruefen") {
+                    TextEditor(text: $viewModel.sourceReplacementExtractedText)
+                        .frame(minHeight: 220)
+                }
+
+                if let sourceReplacementErrorMessage = viewModel.sourceReplacementErrorMessage {
+                    Text(sourceReplacementErrorMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
+            }
+            .navigationTitle("Original ersetzen")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Abbrechen") {
+                        viewModel.cancelSourceReplacementReview()
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Ersetzen") {
+                        viewModel.confirmSourceReplacement(for: document)
+                    }
+                    .disabled(viewModel.canConfirmSourceReplacement == false)
+                }
+            }
+            .interactiveDismissDisabled()
+            .presentationDetents([.medium, .large])
         }
     }
 

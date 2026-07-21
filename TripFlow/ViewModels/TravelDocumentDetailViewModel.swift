@@ -39,6 +39,14 @@ final class TravelDocumentDetailViewModel {
     var isShowingSourceShare = false
     var sourceShareURL: URL?
     var sourceShareErrorMessage: String?
+    var isShowingSourceReplacementImporter = false
+    var isShowingSourceReplacementScanner = false
+    var isShowingSourceReplacementReview = false
+    var isPreparingSourceReplacement = false
+    var sourceReplacementFileName = ""
+    var sourceReplacementExtractedText = ""
+    var sourceReplacementErrorMessage: String?
+    var sourceReplacementSuccessMessage: String?
     let hasSourceDocument: Bool
 
     var canSave: Bool {
@@ -73,17 +81,29 @@ final class TravelDocumentDetailViewModel {
         extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
 
+    var canConfirmSourceReplacement: Bool {
+        pendingSourceReplacementData != nil
+            && pendingSourceReplacementFingerprint != nil
+            && sourceReplacementFileName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
+
     private let travelDocumentService: TravelDocumentService
     private let travelDocumentParserService: TravelDocumentParserService
     private let stopService: StopService
     private let travelDocumentSourcePreviewService: any TravelDocumentSourcePreviewing
+    private let travelDocumentOCRService: any TravelDocumentTextRecognizing
+    private let travelDocumentSourceService: any TravelDocumentSourcePreparing
+    private var pendingSourceReplacementData: Data?
+    private var pendingSourceReplacementFingerprint: String?
 
     init(
         document: TravelDocument,
         travelDocumentService: TravelDocumentService = TravelDocumentService(),
         travelDocumentParserService: TravelDocumentParserService = TravelDocumentParserService(),
         stopService: StopService = StopService(),
-        travelDocumentSourcePreviewService: any TravelDocumentSourcePreviewing = TravelDocumentSourceService()
+        travelDocumentSourcePreviewService: any TravelDocumentSourcePreviewing = TravelDocumentSourceService(),
+        travelDocumentOCRService: any TravelDocumentTextRecognizing = TravelDocumentOCRService(),
+        travelDocumentSourceService: any TravelDocumentSourcePreparing = TravelDocumentSourceService()
     ) {
         title = document.title
         documentType = document.documentType
@@ -94,6 +114,8 @@ final class TravelDocumentDetailViewModel {
         self.travelDocumentParserService = travelDocumentParserService
         self.stopService = stopService
         self.travelDocumentSourcePreviewService = travelDocumentSourcePreviewService
+        self.travelDocumentOCRService = travelDocumentOCRService
+        self.travelDocumentSourceService = travelDocumentSourceService
     }
 
     func showSourcePreview(for document: TravelDocument) {
@@ -154,6 +176,144 @@ final class TravelDocumentDetailViewModel {
 
         sourceShareURL = nil
         isShowingSourceShare = false
+    }
+
+    func showSourceReplacementImporter() {
+        sourceReplacementErrorMessage = nil
+        sourceReplacementSuccessMessage = nil
+        isShowingSourceReplacementImporter = true
+    }
+
+    func showSourceReplacementScanner() {
+        sourceReplacementErrorMessage = nil
+        sourceReplacementSuccessMessage = nil
+        isShowingSourceReplacementScanner = true
+    }
+
+    func cancelSourceReplacementScanner() {
+        isShowingSourceReplacementScanner = false
+    }
+
+    func failSourceReplacementScanner() {
+        isShowingSourceReplacementScanner = false
+        sourceReplacementErrorMessage = "Das Ersatzdokument konnte nicht gescannt werden."
+    }
+
+    func importSourceReplacement(from result: Result<[URL], Error>) async {
+        sourceReplacementErrorMessage = nil
+
+        let urls: [URL]
+
+        switch result {
+        case let .success(selectedURLs):
+            urls = selectedURLs
+        case let .failure(error):
+            if (error as? CocoaError)?.code != .userCancelled {
+                sourceReplacementErrorMessage = "Die Ersatzdatei konnte nicht importiert werden."
+            }
+            return
+        }
+
+        guard let url = urls.first else {
+            sourceReplacementErrorMessage = "Es wurde keine Ersatzdatei ausgewaehlt."
+            return
+        }
+
+        isPreparingSourceReplacement = true
+        defer { isPreparingSourceReplacement = false }
+
+        do {
+            try travelDocumentSourceService.validateDocument(at: url)
+            let recognizedText = try await travelDocumentOCRService.recognizeText(inDocumentAt: url)
+            let sourceData = try travelDocumentSourceService.data(from: url)
+            prepareSourceReplacement(
+                fileName: url.lastPathComponent,
+                extractedText: recognizedText,
+                sourceData: sourceData
+            )
+        } catch TravelDocumentOCRError.unreadableImage {
+            sourceReplacementErrorMessage = "Die ausgewaehlte Bilddatei konnte nicht gelesen werden."
+        } catch TravelDocumentOCRError.unreadablePDF {
+            sourceReplacementErrorMessage = "Die ausgewaehlte PDF-Datei konnte nicht gelesen werden."
+        } catch TravelDocumentOCRError.noRecognizedText {
+            sourceReplacementErrorMessage = "In der ausgewaehlten Datei wurde kein Text erkannt."
+        } catch TravelDocumentSourceError.unreadableFile {
+            sourceReplacementErrorMessage = "Die ausgewaehlte Datei konnte nicht lokal vorbereitet werden."
+        } catch TravelDocumentSourceError.sourceTooLarge(let maximumByteCount) {
+            sourceReplacementErrorMessage = "Die Ersatzdatei darf hoechstens \(Self.megabytes(maximumByteCount)) MB gross sein."
+        } catch {
+            sourceReplacementErrorMessage = "Die Texterkennung der Ersatzdatei ist fehlgeschlagen."
+        }
+    }
+
+    func importScannedSourceReplacementPages(_ pages: [Data]) async {
+        isShowingSourceReplacementScanner = false
+        sourceReplacementErrorMessage = nil
+
+        guard pages.isEmpty == false else {
+            sourceReplacementErrorMessage = "Der Ersatzscan enthaelt keine Seiten."
+            return
+        }
+
+        isPreparingSourceReplacement = true
+        defer { isPreparingSourceReplacement = false }
+
+        do {
+            try travelDocumentSourceService.validateScannedPages(pages)
+            let recognizedText = try await travelDocumentOCRService.recognizeText(inImageData: pages)
+            let sourceData = try travelDocumentSourceService.pdfData(fromScannedPages: pages)
+            prepareSourceReplacement(
+                fileName: "Dokumentenscan.pdf",
+                extractedText: recognizedText,
+                sourceData: sourceData
+            )
+        } catch TravelDocumentOCRError.unreadableImage {
+            sourceReplacementErrorMessage = "Mindestens eine gescannte Seite konnte nicht gelesen werden."
+        } catch TravelDocumentOCRError.noRecognizedText {
+            sourceReplacementErrorMessage = "Im Ersatzscan wurde kein Text erkannt."
+        } catch TravelDocumentSourceError.unreadableScanPage {
+            sourceReplacementErrorMessage = "Mindestens eine gescannte Seite konnte nicht vorbereitet werden."
+        } catch TravelDocumentSourceError.tooManyScanPages(let maximumPageCount) {
+            sourceReplacementErrorMessage = "Ein Ersatzscan darf hoechstens \(maximumPageCount) Seiten enthalten."
+        } catch TravelDocumentSourceError.sourceTooLarge(let maximumByteCount) {
+            sourceReplacementErrorMessage = "Der Ersatzscan darf hoechstens \(Self.megabytes(maximumByteCount)) MB gross sein."
+        } catch {
+            sourceReplacementErrorMessage = "Die Texterkennung des Ersatzscans ist fehlgeschlagen."
+        }
+    }
+
+    func cancelSourceReplacementReview() {
+        clearSourceReplacementDraft()
+        sourceReplacementErrorMessage = nil
+        isShowingSourceReplacementReview = false
+    }
+
+    func confirmSourceReplacement(for document: TravelDocument) {
+        guard let sourceData = pendingSourceReplacementData,
+              let sourceFingerprint = pendingSourceReplacementFingerprint else {
+            sourceReplacementErrorMessage = "Die Ersatzdatei ist nicht mehr verfuegbar."
+            return
+        }
+
+        do {
+            try travelDocumentService.replaceSource(
+                of: document,
+                fileName: sourceReplacementFileName,
+                extractedText: sourceReplacementExtractedText,
+                sourceData: sourceData,
+                sourceFingerprint: sourceFingerprint
+            )
+            fileName = document.fileName
+            extractedText = document.extractedText
+            clearSourceReplacementDraft()
+            sourceReplacementErrorMessage = nil
+            sourceReplacementSuccessMessage = "Die Originaldatei wurde ersetzt."
+            isShowingSourceReplacementReview = false
+        } catch TravelDocumentValidationError.duplicateSource {
+            sourceReplacementErrorMessage = "Diese Originaldatei ist in diesem Trip bereits gespeichert."
+        } catch {
+            sourceReplacementErrorMessage = "Die Originaldatei konnte nicht ersetzt werden."
+        }
     }
 
     func parsedTravelDocumentResult(calendar: Calendar = .current) -> TravelDocumentParseResult {
@@ -353,6 +513,30 @@ final class TravelDocumentDetailViewModel {
         } catch {
             errorMessage = "Die Reiseunterlage konnte nicht gespeichert werden."
         }
+    }
+
+    private func prepareSourceReplacement(
+        fileName: String,
+        extractedText: String,
+        sourceData: Data
+    ) {
+        sourceReplacementFileName = fileName
+        sourceReplacementExtractedText = extractedText
+        pendingSourceReplacementData = sourceData
+        pendingSourceReplacementFingerprint = travelDocumentSourceService.fingerprint(for: sourceData)
+        sourceReplacementErrorMessage = nil
+        isShowingSourceReplacementReview = true
+    }
+
+    private func clearSourceReplacementDraft() {
+        sourceReplacementFileName = ""
+        sourceReplacementExtractedText = ""
+        pendingSourceReplacementData = nil
+        pendingSourceReplacementFingerprint = nil
+    }
+
+    private static func megabytes(_ byteCount: Int) -> Int {
+        max(1, byteCount / 1_024 / 1_024)
     }
 
     private static func textExcerpt(from text: String) -> String {

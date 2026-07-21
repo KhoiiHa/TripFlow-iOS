@@ -164,7 +164,28 @@ struct TravelDocumentDetailView: View {
                     )
                 }
 
-                if let suggestedLocationName = viewModel.parsedSuggestedLocationName() {
+                let departureLocationName = viewModel.parsedDepartureLocationName()
+                let arrivalLocationName = viewModel.parsedArrivalLocationName()
+
+                if let departureLocationName {
+                    parsedTravelDataRow(
+                        title: "Abfahrt",
+                        value: departureLocationName,
+                        systemImage: "arrow.up.right.circle"
+                    )
+                }
+
+                if let arrivalLocationName {
+                    parsedTravelDataRow(
+                        title: "Ankunft",
+                        value: arrivalLocationName,
+                        systemImage: "arrow.down.right.circle"
+                    )
+                }
+
+                if departureLocationName == nil,
+                   arrivalLocationName == nil,
+                   let suggestedLocationName = viewModel.parsedSuggestedLocationName() {
                     parsedTravelDataRow(
                         title: "Ort",
                         value: suggestedLocationName,

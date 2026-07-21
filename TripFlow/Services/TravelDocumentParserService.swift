@@ -24,6 +24,8 @@ struct TravelDocumentParseResult: Equatable {
     let scheduledDate: Date?
     let suggestedStopTitle: String?
     let suggestedLocationName: String?
+    let departureLocationName: String?
+    let arrivalLocationName: String?
     let flightNumber: String?
     let trainNumber: String?
     let reservationNumber: String?
@@ -34,7 +36,23 @@ struct TravelDocumentParserService {
         let date = parseDate(in: text)
         let time = parseTime(in: text)
         let scheduledDate = makeDate(from: date, time: time, calendar: calendar)
-        let suggestedLocationName = parseSuggestedLocationName(in: text)
+        let departureLocationName = parseLocationName(
+            in: text,
+            labels: ["von", "from", "abfahrt", "departure", "start", "origin"],
+            allowsLabelSuffix: true
+        )
+        let arrivalLocationName = parseLocationName(
+            in: text,
+            labels: ["nach", "to", "ankunft", "arrival", "ziel", "destination"],
+            allowsLabelSuffix: true
+        )
+        let genericLocationName = parseLocationName(
+            in: text,
+            labels: ["adresse", "address", "ort", "location", "flughafen", "airport", "bahnhof", "station", "hotel"]
+        )
+        let suggestedLocationName = arrivalLocationName
+            ?? genericLocationName
+            ?? departureLocationName
         let flightNumber = parseFlightNumber(in: text)
         let trainNumber = parseTrainNumber(in: text)
         let suggestedStopTitle = parseSuggestedStopTitle(
@@ -50,6 +68,8 @@ struct TravelDocumentParserService {
             scheduledDate: scheduledDate,
             suggestedStopTitle: suggestedStopTitle,
             suggestedLocationName: suggestedLocationName,
+            departureLocationName: departureLocationName,
+            arrivalLocationName: arrivalLocationName,
             flightNumber: flightNumber,
             trainNumber: trainNumber,
             reservationNumber: reservationNumber
@@ -157,29 +177,11 @@ struct TravelDocumentParserService {
         return nil
     }
 
-    private func parseSuggestedLocationName(in text: String) -> String? {
-        let locationLabels = [
-            "adresse",
-            "address",
-            "ort",
-            "location",
-            "flughafen",
-            "airport",
-            "bahnhof",
-            "station",
-            "hotel",
-            "von",
-            "nach",
-            "from",
-            "to",
-            "abfahrt",
-            "ankunft",
-            "departure",
-            "arrival",
-            "start",
-            "ziel"
-        ]
-
+    private func parseLocationName(
+        in text: String,
+        labels: [String],
+        allowsLabelSuffix: Bool = false
+    ) -> String? {
         for line in text.split(whereSeparator: \.isNewline) {
             let trimmedLine = String(line).trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -194,7 +196,10 @@ struct TravelDocumentParserService {
             let value = String(trimmedLine[valueStartIndex...])
                 .trimmingCharacters(in: .whitespacesAndNewlines)
 
-            if locationLabels.contains(rawLabel), value.isEmpty == false {
+            if labels.contains(where: { label in
+                rawLabel == label
+                    || (allowsLabelSuffix && rawLabel.hasPrefix("\(label) "))
+            }), value.isEmpty == false {
                 return value
             }
         }

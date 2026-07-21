@@ -346,7 +346,31 @@ final class TravelDocumentDetailViewModel {
             )
         }
 
-        if let suggestedLocationName = result.suggestedLocationName {
+        if let departureLocationName = result.departureLocationName {
+            items.append(
+                TravelDocumentRecognitionSummaryItem(
+                    id: "departure",
+                    title: "Abfahrt",
+                    value: departureLocationName,
+                    systemImage: "arrow.up.right.circle"
+                )
+            )
+        }
+
+        if let arrivalLocationName = result.arrivalLocationName {
+            items.append(
+                TravelDocumentRecognitionSummaryItem(
+                    id: "arrival",
+                    title: "Ankunft",
+                    value: arrivalLocationName,
+                    systemImage: "arrow.down.right.circle"
+                )
+            )
+        }
+
+        if result.departureLocationName == nil,
+           result.arrivalLocationName == nil,
+           let suggestedLocationName = result.suggestedLocationName {
             items.append(
                 TravelDocumentRecognitionSummaryItem(
                     id: "location",
@@ -400,6 +424,14 @@ final class TravelDocumentDetailViewModel {
 
     func parsedSuggestedLocationName(calendar: Calendar = .current) -> String? {
         parsedTravelDocumentResult(calendar: calendar).suggestedLocationName
+    }
+
+    func parsedDepartureLocationName(calendar: Calendar = .current) -> String? {
+        parsedTravelDocumentResult(calendar: calendar).departureLocationName
+    }
+
+    func parsedArrivalLocationName(calendar: Calendar = .current) -> String? {
+        parsedTravelDocumentResult(calendar: calendar).arrivalLocationName
     }
 
     func parsedFlightNumber(calendar: Calendar = .current) -> String? {

@@ -432,6 +432,35 @@ struct TripFlowTests {
             """
         )
 
+        #expect(result.departureLocationName == "Berlin Hbf")
+        #expect(result.arrivalLocationName == "Hamburg Hbf")
+        #expect(result.suggestedLocationName == "Hamburg Hbf")
+    }
+
+    @Test func parserRecognizesEnglishDepartureAndArrivalLabels() {
+        let result = travelDocumentParserService.parse(
+            """
+            Flight LH 2034 05/08/26 09:05
+            Departure Airport: Berlin BER
+            Arrival Airport: Lisbon LIS
+            """
+        )
+
+        #expect(result.departureLocationName == "Berlin BER")
+        #expect(result.arrivalLocationName == "Lisbon LIS")
+        #expect(result.suggestedLocationName == "Lisbon LIS")
+    }
+
+    @Test func parserFallsBackToDepartureWhenArrivalIsMissing() {
+        let result = travelDocumentParserService.parse(
+            """
+            Bahn ICE 100 15.07.2026 08:30
+            Abfahrt: Berlin Hbf
+            """
+        )
+
+        #expect(result.departureLocationName == "Berlin Hbf")
+        #expect(result.arrivalLocationName == nil)
         #expect(result.suggestedLocationName == "Berlin Hbf")
     }
 
@@ -646,7 +675,7 @@ struct TripFlowTests {
         viewModel.showCreateStop(from: document, calendar: testCalendar())
 
         #expect(viewModel.newStopTitle == "Bahnfahrt ICE100")
-        #expect(viewModel.newStopLocationName == "Berlin Hbf")
+        #expect(viewModel.newStopLocationName == "Hamburg Hbf")
         #expect(viewModel.stopSuggestionTrainNumber == "ICE100")
     }
 
@@ -1270,6 +1299,22 @@ struct TripFlowTests {
         #expect(trip.documents.isEmpty)
     }
 
+    @Test func tripDetailBuildsDepartureAndArrivalReviewForRouteDocument() throws {
+        let trip = try tripService.createTrip(title: "Europa")
+        let viewModel = TripDetailViewModel(trip: trip)
+        viewModel.newDocumentExtractedText = """
+        Bahn ICE 100 15.07.2026 08:30
+        Von: Berlin Hbf
+        Nach: Hamburg Hbf
+        """
+
+        let items = viewModel.newDocumentRecognitionSummaryItems(calendar: testCalendar())
+
+        #expect(items.map(\.id) == ["stopTitle", "schedule", "departure", "arrival", "reference"])
+        #expect(items.first { $0.id == "departure" }?.value == "Berlin Hbf")
+        #expect(items.first { $0.id == "arrival" }?.value == "Hamburg Hbf")
+    }
+
     @Test func tripDetailOffersStopReviewOnlyForCompleteScheduleInDraft() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let viewModel = TripDetailViewModel(trip: trip)
@@ -1722,6 +1767,28 @@ struct TripFlowTests {
         #expect(items.first { $0.id == "schedule" }?.value == "5. August 2026, 09:05")
         #expect(items.first { $0.id == "location" }?.value == "Gate A12")
         #expect(items.first { $0.id == "reference" }?.value == "Flug LH2034 - Ref XYZ789")
+    }
+
+    @Test func documentDetailUsesArrivalForReviewedRouteStopSuggestion() throws {
+        let trip = try tripService.createTrip(title: "Europa")
+        let document = try travelDocumentService.createDocument(
+            title: "Bahnticket",
+            extractedText: """
+            Bahn ICE 100 15.07.2026 08:30
+            Von: Berlin Hbf
+            Nach: Hamburg Hbf
+            """,
+            for: trip
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        let items = viewModel.recognitionSummaryItems(calendar: testCalendar())
+        viewModel.showStopSuggestion(from: document, calendar: testCalendar())
+
+        #expect(items.map(\.id) == ["stopTitle", "schedule", "departure", "arrival", "reference"])
+        #expect(viewModel.parsedDepartureLocationName(calendar: testCalendar()) == "Berlin Hbf")
+        #expect(viewModel.parsedArrivalLocationName(calendar: testCalendar()) == "Hamburg Hbf")
+        #expect(viewModel.stopSuggestionLocationName == "Hamburg Hbf")
     }
 
     @Test func documentDetailParsesTrainNumberMetadata() {

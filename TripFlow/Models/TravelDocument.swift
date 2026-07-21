@@ -14,6 +14,7 @@ final class TravelDocument {
     var documentType: String
     var fileName: String
     var extractedText: String
+    @Attribute(.externalStorage) var sourceData: Data?
     var createdAt: Date
     var updatedAt: Date
     var trip: Trip?
@@ -23,6 +24,7 @@ final class TravelDocument {
         documentType: String = "",
         fileName: String = "",
         extractedText: String = "",
+        sourceData: Data? = nil,
         createdAt: Date = Date(),
         updatedAt: Date = Date(),
         trip: Trip? = nil
@@ -31,6 +33,7 @@ final class TravelDocument {
         self.documentType = documentType
         self.fileName = fileName
         self.extractedText = extractedText
+        self.sourceData = sourceData
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.trip = trip

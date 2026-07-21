@@ -7,6 +7,7 @@
 
 import Foundation
 import MapKit
+import PDFKit
 import SwiftData
 import Testing
 import UIKit
@@ -786,7 +787,8 @@ struct TripFlowTests {
             trip: trip,
             travelDocumentOCRService: TravelDocumentOCRServiceStub(
                 recognizedText: "Flug LH 2034 am 05.08.2026 um 09:05"
-            )
+            ),
+            travelDocumentSourceService: TravelDocumentSourceServiceStub()
         )
 
         await viewModel.importDocumentFile(from: .success([imageURL]))
@@ -828,14 +830,15 @@ struct TripFlowTests {
             trip: trip,
             travelDocumentOCRService: TravelDocumentOCRServiceStub(
                 recognizedText: "Flug LH 2034\n\nGate A12"
-            )
+            ),
+            travelDocumentSourceService: TravelDocumentSourceServiceStub()
         )
         viewModel.isShowingDocumentScanner = true
 
         await viewModel.importScannedDocumentPages([Data([1]), Data([2])])
 
         #expect(viewModel.newDocumentTitle == "Dokumentenscan")
-        #expect(viewModel.newDocumentFileName.isEmpty)
+        #expect(viewModel.newDocumentFileName == "Dokumentenscan.pdf")
         #expect(viewModel.newDocumentExtractedText == "Flug LH 2034\n\nGate A12")
         #expect(viewModel.documentImportSuccessMessage == "2 gescannte Seiten wurden erkannt und koennen geprueft werden.")
         #expect(viewModel.documentErrorMessage == nil)
@@ -897,7 +900,8 @@ struct TripFlowTests {
             trip: trip,
             travelDocumentOCRService: TravelDocumentOCRServiceStub(
                 recognizedText: "Check-in 15.08.2026 um 15:00"
-            )
+            ),
+            travelDocumentSourceService: TravelDocumentSourceServiceStub()
         )
 
         await viewModel.importDocumentFile(from: .success([pdfURL]))
@@ -908,6 +912,93 @@ struct TripFlowTests {
         #expect(viewModel.documentErrorMessage == nil)
         #expect(viewModel.isImportingDocument == false)
         #expect(trip.documents.isEmpty)
+    }
+
+    @Test @MainActor func documentSourceCreatesMultiPagePDFFromScanImages() throws {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 120, height: 180))
+        let firstPage = renderer.image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 120, height: 180))
+        }
+        let secondPage = renderer.image { context in
+            UIColor.lightGray.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 120, height: 180))
+        }
+        let pages = try [firstPage, secondPage].map { image in
+            try #require(image.jpegData(compressionQuality: 0.9))
+        }
+
+        let pdfData = try TravelDocumentSourceService().pdfData(fromScannedPages: pages)
+        let document = try #require(PDFDocument(data: pdfData))
+
+        #expect(document.pageCount == 2)
+    }
+
+    @Test @MainActor func documentSourceReadsImportedFileData() throws {
+        let sourceURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tripflow-source-\(UUID().uuidString).pdf")
+        let expectedData = Data("original document".utf8)
+        try expectedData.write(to: sourceURL)
+        defer { try? FileManager.default.removeItem(at: sourceURL) }
+
+        let sourceData = try TravelDocumentSourceService().data(from: sourceURL)
+
+        #expect(sourceData == expectedData)
+    }
+
+    @Test @MainActor func tripDetailStoresImportedSourceOnlyAfterDocumentConfirmation() async throws {
+        let sourceData = Data("original document".utf8)
+        let trip = try tripService.createTrip(title: "Berlin")
+        let modelContext = try makeModelContext()
+        modelContext.insert(trip)
+        let viewModel = TripDetailViewModel(
+            trip: trip,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(
+                recognizedText: "Flug LH 2034 am 05.08.2026 um 09:05"
+            ),
+            travelDocumentSourceService: TravelDocumentSourceServiceStub(
+                sourceData: sourceData
+            )
+        )
+
+        await viewModel.importDocumentFile(
+            from: .success([URL(fileURLWithPath: "/tmp/boarding-pass.pdf")])
+        )
+
+        #expect(trip.documents.isEmpty)
+
+        viewModel.createDocument(for: trip, in: modelContext)
+        try modelContext.save()
+
+        let documents = try modelContext.fetch(FetchDescriptor<TravelDocument>())
+        #expect(documents.count == 1)
+        #expect(documents.first?.sourceData == sourceData)
+        #expect(documents.first?.fileName == "boarding-pass.pdf")
+    }
+
+    @Test @MainActor func tripDetailDiscardsImportedSourceWhenDocumentDraftIsCancelled() async throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let modelContext = try makeModelContext()
+        let viewModel = TripDetailViewModel(
+            trip: trip,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(
+                recognizedText: "Check-in 15.08.2026 um 15:00"
+            ),
+            travelDocumentSourceService: TravelDocumentSourceServiceStub(
+                sourceData: Data("temporary source".utf8)
+            )
+        )
+
+        await viewModel.importDocumentFile(
+            from: .success([URL(fileURLWithPath: "/tmp/hotel.pdf")])
+        )
+        viewModel.cancelCreateDocument()
+
+        viewModel.newDocumentTitle = "Manuelle Notiz"
+        viewModel.createDocument(for: trip, in: modelContext)
+
+        #expect(trip.documents.count == 1)
+        #expect(trip.documents.first?.sourceData == nil)
     }
 
     @Test @MainActor func documentOCRReadsEmbeddedTextFromPDF() async throws {
@@ -1904,6 +1995,22 @@ private struct TravelDocumentOCRServiceStub: TravelDocumentTextRecognizing {
         }
 
         return recognizedText ?? ""
+    }
+}
+
+private struct TravelDocumentSourceServiceStub: TravelDocumentSourcePreparing {
+    let sourceData: Data
+
+    init(sourceData: Data = Data("source".utf8)) {
+        self.sourceData = sourceData
+    }
+
+    func data(from url: URL) throws -> Data {
+        sourceData
+    }
+
+    func pdfData(fromScannedPages pages: [Data]) throws -> Data {
+        sourceData
     }
 }
 

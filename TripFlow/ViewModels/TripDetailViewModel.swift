@@ -54,6 +54,7 @@ final class TripDetailViewModel {
     var documentErrorMessage: String?
     var documentImportSuccessMessage: String?
     private var pendingDocumentStopSuggestion: TravelDocument?
+    private var pendingDocumentSourceData: Data?
 
     var canSave: Bool {
         saveDisabledReason == nil
@@ -148,6 +149,7 @@ final class TripDetailViewModel {
     private let travelDocumentService: TravelDocumentService
     private let travelDocumentParserService: TravelDocumentParserService
     private let travelDocumentOCRService: any TravelDocumentTextRecognizing
+    private let travelDocumentSourceService: any TravelDocumentSourcePreparing
     private let timelineService: TimelineService
     private let mapService: MapService
     private let geocodingService: any LocationGeocoding
@@ -160,6 +162,7 @@ final class TripDetailViewModel {
         travelDocumentService: TravelDocumentService = TravelDocumentService(),
         travelDocumentParserService: TravelDocumentParserService = TravelDocumentParserService(),
         travelDocumentOCRService: any TravelDocumentTextRecognizing = TravelDocumentOCRService(),
+        travelDocumentSourceService: any TravelDocumentSourcePreparing = TravelDocumentSourceService(),
         timelineService: TimelineService = TimelineService(),
         mapService: MapService = MapService(),
         geocodingService: any LocationGeocoding = LocationGeocodingService(),
@@ -175,6 +178,7 @@ final class TripDetailViewModel {
         self.travelDocumentService = travelDocumentService
         self.travelDocumentParserService = travelDocumentParserService
         self.travelDocumentOCRService = travelDocumentOCRService
+        self.travelDocumentSourceService = travelDocumentSourceService
         self.timelineService = timelineService
         self.mapService = mapService
         self.geocodingService = geocodingService
@@ -452,6 +456,7 @@ final class TripDetailViewModel {
         isShowingDocumentScanner = false
         isImportingDocument = false
         pendingDocumentStopSuggestion = nil
+        pendingDocumentSourceData = nil
         isShowingCreateDocument = true
     }
 
@@ -466,6 +471,7 @@ final class TripDetailViewModel {
         isShowingDocumentScanner = false
         isImportingDocument = false
         pendingDocumentStopSuggestion = nil
+        pendingDocumentSourceData = nil
         isShowingCreateDocument = false
     }
 
@@ -506,8 +512,10 @@ final class TripDetailViewModel {
 
         do {
             let recognizedText = try await travelDocumentOCRService.recognizeText(inImageData: pages)
-            newDocumentFileName = ""
+            let sourceData = try travelDocumentSourceService.pdfData(fromScannedPages: pages)
+            newDocumentFileName = "Dokumentenscan.pdf"
             newDocumentExtractedText = recognizedText
+            pendingDocumentSourceData = sourceData
 
             if newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 newDocumentTitle = "Dokumentenscan"
@@ -520,6 +528,8 @@ final class TripDetailViewModel {
             documentErrorMessage = "Mindestens eine gescannte Seite konnte nicht gelesen werden."
         } catch TravelDocumentOCRError.noRecognizedText {
             documentErrorMessage = "Im gescannten Dokument wurde kein Text erkannt."
+        } catch TravelDocumentSourceError.unreadableScanPage {
+            documentErrorMessage = "Mindestens eine gescannte Seite konnte nicht gespeichert werden."
         } catch {
             documentErrorMessage = "Die Texterkennung des Scans ist fehlgeschlagen."
         }
@@ -551,8 +561,10 @@ final class TripDetailViewModel {
 
         do {
             let recognizedText = try await travelDocumentOCRService.recognizeText(inDocumentAt: url)
+            let sourceData = try travelDocumentSourceService.data(from: url)
             newDocumentFileName = url.lastPathComponent
             newDocumentExtractedText = recognizedText
+            pendingDocumentSourceData = sourceData
 
             if newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 newDocumentTitle = url.deletingPathExtension().lastPathComponent
@@ -565,6 +577,8 @@ final class TripDetailViewModel {
             documentErrorMessage = "Die ausgewaehlte PDF-Datei konnte nicht gelesen werden."
         } catch TravelDocumentOCRError.noRecognizedText {
             documentErrorMessage = "In der ausgewaehlten Datei wurde kein Text erkannt."
+        } catch TravelDocumentSourceError.unreadableFile {
+            documentErrorMessage = "Die ausgewaehlte Datei konnte nicht lokal gespeichert werden."
         } catch {
             documentErrorMessage = "Die Texterkennung ist fehlgeschlagen."
         }
@@ -643,6 +657,7 @@ final class TripDetailViewModel {
                 documentType: newDocumentType,
                 fileName: newDocumentFileName,
                 extractedText: newDocumentExtractedText,
+                sourceData: pendingDocumentSourceData,
                 for: trip
             )
             modelContext.insert(document)
@@ -656,6 +671,7 @@ final class TripDetailViewModel {
             isShowingDocumentImporter = false
             isShowingDocumentScanner = false
             isImportingDocument = false
+            pendingDocumentSourceData = nil
             isShowingCreateDocument = false
         } catch TravelDocumentValidationError.emptyTitle {
             documentErrorMessage = "Bitte gib einen Namen fuer die Reiseunterlage ein."

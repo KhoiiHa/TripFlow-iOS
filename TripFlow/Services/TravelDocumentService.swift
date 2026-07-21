@@ -17,6 +17,7 @@ struct TravelDocumentService {
         documentType: String = "",
         fileName: String = "",
         extractedText: String = "",
+        sourceData: Data? = nil,
         for trip: Trip
     ) throws -> TravelDocument {
         let values = try validate(title: title, documentType: documentType, fileName: fileName, extractedText: extractedText)
@@ -25,6 +26,7 @@ struct TravelDocumentService {
             documentType: values.documentType,
             fileName: values.fileName,
             extractedText: values.extractedText,
+            sourceData: sourceData,
             trip: trip
         )
 

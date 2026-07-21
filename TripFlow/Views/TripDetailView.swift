@@ -51,7 +51,12 @@ struct TripDetailView: View {
         .sheet(isPresented: $viewModel.isShowingCreateStop) {
             createStopSheet
         }
-        .sheet(isPresented: $viewModel.isShowingCreateDocument) {
+        .sheet(
+            isPresented: $viewModel.isShowingCreateDocument,
+            onDismiss: {
+                viewModel.showPendingDocumentStopSuggestion()
+            }
+        ) {
             createDocumentSheet
         }
     }
@@ -705,6 +710,22 @@ struct TripDetailView: View {
                         } else {
                             ForEach(summaryItems) { item in
                                 newDocumentRecognitionSummaryRow(item)
+                            }
+
+                            if viewModel.canReviewNewDocumentStopSuggestion {
+                                Button {
+                                    viewModel.createDocument(
+                                        for: trip,
+                                        in: modelContext,
+                                        reviewStopSuggestion: true
+                                    )
+                                } label: {
+                                    Label(
+                                        "Unterlage speichern und Stop prüfen",
+                                        systemImage: "checklist"
+                                    )
+                                }
+                                .disabled(viewModel.canCreateDocument == false)
                             }
                         }
                     }

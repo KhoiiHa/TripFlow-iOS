@@ -53,6 +53,7 @@ final class TripDetailViewModel {
     var isImportingDocument = false
     var documentErrorMessage: String?
     var documentImportSuccessMessage: String?
+    private var pendingDocumentStopSuggestion: TravelDocument?
 
     var canSave: Bool {
         saveDisabledReason == nil
@@ -136,6 +137,10 @@ final class TripDetailViewModel {
 
     var hasNewDocumentExtractedText: Bool {
         newDocumentExtractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
+
+    var canReviewNewDocumentStopSuggestion: Bool {
+        travelDocumentParserService.parse(newDocumentExtractedText).scheduledDate != nil
     }
 
     private let tripService: TripService
@@ -446,6 +451,7 @@ final class TripDetailViewModel {
         isShowingDocumentImporter = false
         isShowingDocumentScanner = false
         isImportingDocument = false
+        pendingDocumentStopSuggestion = nil
         isShowingCreateDocument = true
     }
 
@@ -459,6 +465,7 @@ final class TripDetailViewModel {
         isShowingDocumentImporter = false
         isShowingDocumentScanner = false
         isImportingDocument = false
+        pendingDocumentStopSuggestion = nil
         isShowingCreateDocument = false
     }
 
@@ -622,8 +629,13 @@ final class TripDetailViewModel {
         }
     }
 
-    func createDocument(for trip: Trip, in modelContext: ModelContext) {
+    func createDocument(
+        for trip: Trip,
+        in modelContext: ModelContext,
+        reviewStopSuggestion: Bool = false
+    ) {
         documentErrorMessage = nil
+        pendingDocumentStopSuggestion = nil
 
         do {
             let document = try travelDocumentService.createDocument(
@@ -634,6 +646,7 @@ final class TripDetailViewModel {
                 for: trip
             )
             modelContext.insert(document)
+            pendingDocumentStopSuggestion = reviewStopSuggestion ? document : nil
             newDocumentTitle = ""
             newDocumentType = ""
             newDocumentFileName = ""
@@ -649,6 +662,15 @@ final class TripDetailViewModel {
         } catch {
             documentErrorMessage = "Die Reiseunterlage konnte nicht erstellt werden."
         }
+    }
+
+    func showPendingDocumentStopSuggestion() {
+        guard let document = pendingDocumentStopSuggestion else {
+            return
+        }
+
+        pendingDocumentStopSuggestion = nil
+        showCreateStop(from: document)
     }
 
     func fillNewStopCoordinatesFromLocationName() async {

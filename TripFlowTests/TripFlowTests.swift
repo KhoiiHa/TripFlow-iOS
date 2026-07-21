@@ -966,6 +966,55 @@ struct TripFlowTests {
         #expect(trip.documents.isEmpty)
     }
 
+    @Test func tripDetailOffersStopReviewOnlyForCompleteScheduleInDraft() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+
+        viewModel.newDocumentExtractedText = "Flug LH 2034 am 05.08.2026"
+        #expect(viewModel.canReviewNewDocumentStopSuggestion == false)
+
+        viewModel.newDocumentExtractedText += " um 09:05"
+        #expect(viewModel.canReviewNewDocumentStopSuggestion)
+    }
+
+    @Test @MainActor func tripDetailCreatesStopOnlyAfterDraftReviewConfirmation() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        let modelContext = try makeModelContext()
+        viewModel.newDocumentTitle = "Boarding Pass"
+        viewModel.newDocumentType = "Flug"
+        viewModel.newDocumentExtractedText = """
+        Flug LH 2034 am 05.08.2026 um 09:05
+        Flughafen: Berlin Brandenburg
+        """
+        viewModel.isShowingCreateDocument = true
+
+        viewModel.createDocument(
+            for: trip,
+            in: modelContext,
+            reviewStopSuggestion: true
+        )
+
+        #expect(trip.documents.count == 1)
+        #expect(trip.stops.isEmpty)
+        #expect(viewModel.isShowingCreateDocument == false)
+        #expect(viewModel.isShowingCreateStop == false)
+
+        viewModel.showPendingDocumentStopSuggestion()
+
+        #expect(viewModel.isShowingCreateStop)
+        #expect(viewModel.isReviewingDocumentStopSuggestion)
+        #expect(viewModel.newStopTitle == "Flug LH2034")
+        #expect(viewModel.newStopLocationName == "Berlin Brandenburg")
+        #expect(trip.stops.isEmpty)
+
+        viewModel.createStop(for: trip, in: modelContext)
+
+        #expect(trip.stops.count == 1)
+        #expect(trip.stops.first?.title == "Flug LH2034")
+        #expect(viewModel.isShowingCreateStop == false)
+    }
+
     @Test @MainActor func tripDetailCreateDocumentClearsOldErrorOnNewAttempt() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let viewModel = TripDetailViewModel(trip: trip)

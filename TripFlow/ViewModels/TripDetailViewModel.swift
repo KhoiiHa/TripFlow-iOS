@@ -48,7 +48,10 @@ final class TripDetailViewModel {
     var newDocumentFileName = ""
     var newDocumentExtractedText = ""
     var isShowingCreateDocument = false
+    var isShowingDocumentImporter = false
+    var isImportingDocumentImage = false
     var documentErrorMessage: String?
+    var documentImportSuccessMessage: String?
 
     var canSave: Bool {
         saveDisabledReason == nil
@@ -93,6 +96,10 @@ final class TripDetailViewModel {
     }
 
     var createDocumentDisabledReason: String? {
+        if isImportingDocumentImage {
+            return "Texterkennung laeuft."
+        }
+
         if newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return "Name fuer die Reiseunterlage fehlt."
         }
@@ -123,13 +130,14 @@ final class TripDetailViewModel {
     }
 
     var newDocumentExtractedTextHint: String {
-        "Eingefuegter OCR-Text wird nach dem Speichern fuer erkannte Reisedaten und Stop-Vorschlaege genutzt."
+        "Importierter oder eingefuegter OCR-Text wird nach dem Speichern fuer erkannte Reisedaten und Stop-Vorschlaege genutzt."
     }
 
     private let tripService: TripService
     private let stopService: StopService
     private let travelDocumentService: TravelDocumentService
     private let travelDocumentParserService: TravelDocumentParserService
+    private let travelDocumentOCRService: any TravelDocumentTextRecognizing
     private let timelineService: TimelineService
     private let mapService: MapService
     private let geocodingService: any LocationGeocoding
@@ -141,6 +149,7 @@ final class TripDetailViewModel {
         stopService: StopService = StopService(),
         travelDocumentService: TravelDocumentService = TravelDocumentService(),
         travelDocumentParserService: TravelDocumentParserService = TravelDocumentParserService(),
+        travelDocumentOCRService: any TravelDocumentTextRecognizing = TravelDocumentOCRService(),
         timelineService: TimelineService = TimelineService(),
         mapService: MapService = MapService(),
         geocodingService: any LocationGeocoding = LocationGeocodingService(),
@@ -155,6 +164,7 @@ final class TripDetailViewModel {
         self.stopService = stopService
         self.travelDocumentService = travelDocumentService
         self.travelDocumentParserService = travelDocumentParserService
+        self.travelDocumentOCRService = travelDocumentOCRService
         self.timelineService = timelineService
         self.mapService = mapService
         self.geocodingService = geocodingService
@@ -365,6 +375,9 @@ final class TripDetailViewModel {
         newDocumentFileName = ""
         newDocumentExtractedText = ""
         documentErrorMessage = nil
+        documentImportSuccessMessage = nil
+        isShowingDocumentImporter = false
+        isImportingDocumentImage = false
         isShowingCreateDocument = true
     }
 
@@ -374,7 +387,59 @@ final class TripDetailViewModel {
         newDocumentFileName = ""
         newDocumentExtractedText = ""
         documentErrorMessage = nil
+        documentImportSuccessMessage = nil
+        isShowingDocumentImporter = false
+        isImportingDocumentImage = false
         isShowingCreateDocument = false
+    }
+
+    func showDocumentImporter() {
+        documentErrorMessage = nil
+        documentImportSuccessMessage = nil
+        isShowingDocumentImporter = true
+    }
+
+    func importDocumentImage(from result: Result<[URL], Error>) async {
+        documentErrorMessage = nil
+        documentImportSuccessMessage = nil
+
+        let urls: [URL]
+
+        switch result {
+        case let .success(selectedURLs):
+            urls = selectedURLs
+        case let .failure(error):
+            if (error as? CocoaError)?.code != .userCancelled {
+                documentErrorMessage = "Das Bild konnte nicht importiert werden."
+            }
+            return
+        }
+
+        guard let url = urls.first else {
+            documentErrorMessage = "Es wurde kein Bild ausgewaehlt."
+            return
+        }
+
+        isImportingDocumentImage = true
+        defer { isImportingDocumentImage = false }
+
+        do {
+            let recognizedText = try await travelDocumentOCRService.recognizeText(inImageAt: url)
+            newDocumentFileName = url.lastPathComponent
+            newDocumentExtractedText = recognizedText
+
+            if newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                newDocumentTitle = url.deletingPathExtension().lastPathComponent
+            }
+
+            documentImportSuccessMessage = "Text wurde erkannt und kann vor dem Speichern geprueft werden."
+        } catch TravelDocumentOCRError.unreadableImage {
+            documentErrorMessage = "Die ausgewaehlte Bilddatei konnte nicht gelesen werden."
+        } catch TravelDocumentOCRError.noRecognizedText {
+            documentErrorMessage = "Im ausgewaehlten Bild wurde kein Text erkannt."
+        } catch {
+            documentErrorMessage = "Die Texterkennung ist fehlgeschlagen."
+        }
     }
 
     func applyNewDocumentTypeSuggestion(_ suggestion: String) {
@@ -453,6 +518,9 @@ final class TripDetailViewModel {
             newDocumentFileName = ""
             newDocumentExtractedText = ""
             documentErrorMessage = nil
+            documentImportSuccessMessage = nil
+            isShowingDocumentImporter = false
+            isImportingDocumentImage = false
             isShowingCreateDocument = false
         } catch TravelDocumentValidationError.emptyTitle {
             documentErrorMessage = "Bitte gib einen Namen fuer die Reiseunterlage ein."

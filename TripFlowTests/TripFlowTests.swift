@@ -752,7 +752,7 @@ struct TripFlowTests {
 
         #expect(
             viewModel.newDocumentExtractedTextHint
-                == "Eingefuegter OCR-Text wird nach dem Speichern fuer erkannte Reisedaten und Stop-Vorschlaege genutzt."
+                == "Importierter oder eingefuegter OCR-Text wird nach dem Speichern fuer erkannte Reisedaten und Stop-Vorschlaege genutzt."
         )
     }
 
@@ -774,6 +774,49 @@ struct TripFlowTests {
         viewModel.applyNewDocumentTypeSuggestion("Hotel")
 
         #expect(viewModel.newDocumentType == "Hotel")
+    }
+
+    @Test @MainActor func tripDetailImportsRecognizedTextForReviewWithoutSavingDocument() async throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let imageURL = URL(fileURLWithPath: "/tmp/boarding-pass.png")
+        let viewModel = TripDetailViewModel(
+            trip: trip,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(
+                recognizedText: "Flug LH 2034 am 05.08.2026 um 09:05"
+            )
+        )
+
+        await viewModel.importDocumentImage(from: .success([imageURL]))
+
+        #expect(viewModel.newDocumentTitle == "boarding-pass")
+        #expect(viewModel.newDocumentFileName == "boarding-pass.png")
+        #expect(viewModel.newDocumentExtractedText == "Flug LH 2034 am 05.08.2026 um 09:05")
+        #expect(viewModel.documentImportSuccessMessage == "Text wurde erkannt und kann vor dem Speichern geprueft werden.")
+        #expect(viewModel.documentErrorMessage == nil)
+        #expect(viewModel.isImportingDocumentImage == false)
+        #expect(trip.documents.isEmpty)
+    }
+
+    @Test @MainActor func tripDetailKeepsExistingDraftWhenOCRFindsNoText() async throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(
+            trip: trip,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(error: .noRecognizedText)
+        )
+        viewModel.newDocumentTitle = "Bestehender Entwurf"
+        viewModel.newDocumentExtractedText = "Manuell erfasster Text"
+
+        await viewModel.importDocumentImage(
+            from: .success([URL(fileURLWithPath: "/tmp/leer.png")])
+        )
+
+        #expect(viewModel.newDocumentTitle == "Bestehender Entwurf")
+        #expect(viewModel.newDocumentFileName.isEmpty)
+        #expect(viewModel.newDocumentExtractedText == "Manuell erfasster Text")
+        #expect(viewModel.documentErrorMessage == "Im ausgewaehlten Bild wurde kein Text erkannt.")
+        #expect(viewModel.documentImportSuccessMessage == nil)
+        #expect(viewModel.isImportingDocumentImage == false)
+        #expect(trip.documents.isEmpty)
     }
 
     @Test @MainActor func tripDetailCreateDocumentClearsOldErrorOnNewAttempt() throws {
@@ -798,6 +841,9 @@ struct TripFlowTests {
         viewModel.newDocumentFileName = "hotel.pdf"
         viewModel.newDocumentExtractedText = "Check-in 15.07.2026"
         viewModel.documentErrorMessage = "Fehler"
+        viewModel.documentImportSuccessMessage = "Importiert"
+        viewModel.isShowingDocumentImporter = true
+        viewModel.isImportingDocumentImage = true
         viewModel.isShowingCreateDocument = true
 
         viewModel.cancelCreateDocument()
@@ -807,6 +853,9 @@ struct TripFlowTests {
         #expect(viewModel.newDocumentFileName == "")
         #expect(viewModel.newDocumentExtractedText == "")
         #expect(viewModel.documentErrorMessage == nil)
+        #expect(viewModel.documentImportSuccessMessage == nil)
+        #expect(viewModel.isShowingDocumentImporter == false)
+        #expect(viewModel.isImportingDocumentImage == false)
         #expect(viewModel.isShowingCreateDocument == false)
     }
 
@@ -1626,6 +1675,29 @@ struct TripFlowTests {
         let container = try ModelContainer(for: schema, configurations: [configuration])
 
         return ModelContext(container)
+    }
+}
+
+private struct TravelDocumentOCRServiceStub: TravelDocumentTextRecognizing {
+    let recognizedText: String?
+    let error: TravelDocumentOCRError?
+
+    init(recognizedText: String) {
+        self.recognizedText = recognizedText
+        error = nil
+    }
+
+    init(error: TravelDocumentOCRError) {
+        recognizedText = nil
+        self.error = error
+    }
+
+    func recognizeText(inImageAt url: URL) async throws -> String {
+        if let error {
+            throw error
+        }
+
+        return recognizedText ?? ""
     }
 }
 

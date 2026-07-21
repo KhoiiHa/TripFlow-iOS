@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import MapKit
+import UniformTypeIdentifiers
 
 struct TripDetailView: View {
     @Environment(\.modelContext) private var modelContext
@@ -653,6 +654,20 @@ struct TripDetailView: View {
 
                 Section("Datei") {
                     TextField("Dateiname optional", text: $viewModel.newDocumentFileName)
+
+                    Button {
+                        viewModel.showDocumentImporter()
+                    } label: {
+                        Label(
+                            viewModel.isImportingDocumentImage ? "Text wird erkannt" : "Bild importieren",
+                            systemImage: "photo.badge.plus"
+                        )
+                    }
+                    .disabled(viewModel.isImportingDocumentImage)
+
+                    if viewModel.isImportingDocumentImage {
+                        ProgressView("Texterkennung laeuft ...")
+                    }
                 }
 
                 Section("OCR-Text optional") {
@@ -670,6 +685,12 @@ struct TripDetailView: View {
                         .foregroundStyle(.red)
                 }
 
+                if let documentImportSuccessMessage = viewModel.documentImportSuccessMessage {
+                    Text(documentImportSuccessMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.green)
+                }
+
                 if let createDocumentDisabledReason = viewModel.createDocumentDisabledReason {
                     Text(createDocumentDisabledReason)
                         .font(.footnote)
@@ -682,6 +703,7 @@ struct TripDetailView: View {
                     Button("Abbrechen") {
                         viewModel.cancelCreateDocument()
                     }
+                    .disabled(viewModel.isImportingDocumentImage)
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
@@ -692,6 +714,16 @@ struct TripDetailView: View {
                 }
             }
             .presentationDetents([.medium, .large])
+            .interactiveDismissDisabled(viewModel.isImportingDocumentImage)
+            .fileImporter(
+                isPresented: $viewModel.isShowingDocumentImporter,
+                allowedContentTypes: [.image],
+                allowsMultipleSelection: false
+            ) { result in
+                Task {
+                    await viewModel.importDocumentImage(from: result)
+                }
+            }
         }
     }
 

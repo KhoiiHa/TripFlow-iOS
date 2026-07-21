@@ -655,6 +655,19 @@ struct TripDetailView: View {
                 Section("Datei") {
                     TextField("Dateiname optional", text: $viewModel.newDocumentFileName)
 
+                    if TravelDocumentScannerView.isSupported {
+                        Button {
+                            viewModel.showDocumentScanner()
+                        } label: {
+                            Label("Dokument scannen", systemImage: "doc.viewfinder")
+                        }
+                        .disabled(viewModel.isImportingDocumentImage)
+                    } else {
+                        Text("Dokumentscans sind auf diesem Geraet nicht verfuegbar.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+
                     Button {
                         viewModel.showDocumentImporter()
                     } label: {
@@ -715,6 +728,22 @@ struct TripDetailView: View {
             }
             .presentationDetents([.medium, .large])
             .interactiveDismissDisabled(viewModel.isImportingDocumentImage)
+            .fullScreenCover(isPresented: $viewModel.isShowingDocumentScanner) {
+                TravelDocumentScannerView(
+                    onScan: { pages in
+                        Task {
+                            await viewModel.importScannedDocumentPages(pages)
+                        }
+                    },
+                    onCancel: {
+                        viewModel.cancelDocumentScanner()
+                    },
+                    onFailure: {
+                        viewModel.failDocumentScanner()
+                    }
+                )
+                .ignoresSafeArea()
+            }
             .fileImporter(
                 isPresented: $viewModel.isShowingDocumentImporter,
                 allowedContentTypes: [.image],

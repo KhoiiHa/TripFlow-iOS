@@ -49,6 +49,7 @@ final class TripDetailViewModel {
     var newDocumentExtractedText = ""
     var isShowingCreateDocument = false
     var isShowingDocumentImporter = false
+    var isShowingDocumentScanner = false
     var isImportingDocumentImage = false
     var documentErrorMessage: String?
     var documentImportSuccessMessage: String?
@@ -377,6 +378,7 @@ final class TripDetailViewModel {
         documentErrorMessage = nil
         documentImportSuccessMessage = nil
         isShowingDocumentImporter = false
+        isShowingDocumentScanner = false
         isImportingDocumentImage = false
         isShowingCreateDocument = true
     }
@@ -389,6 +391,7 @@ final class TripDetailViewModel {
         documentErrorMessage = nil
         documentImportSuccessMessage = nil
         isShowingDocumentImporter = false
+        isShowingDocumentScanner = false
         isImportingDocumentImage = false
         isShowingCreateDocument = false
     }
@@ -397,6 +400,56 @@ final class TripDetailViewModel {
         documentErrorMessage = nil
         documentImportSuccessMessage = nil
         isShowingDocumentImporter = true
+    }
+
+    func showDocumentScanner() {
+        documentErrorMessage = nil
+        documentImportSuccessMessage = nil
+        isShowingDocumentScanner = true
+    }
+
+    func cancelDocumentScanner() {
+        isShowingDocumentScanner = false
+    }
+
+    func failDocumentScanner() {
+        isShowingDocumentScanner = false
+        documentImportSuccessMessage = nil
+        documentErrorMessage = "Das Dokument konnte nicht gescannt werden."
+    }
+
+    func importScannedDocumentPages(_ pages: [Data]) async {
+        isShowingDocumentScanner = false
+        documentErrorMessage = nil
+        documentImportSuccessMessage = nil
+
+        guard pages.isEmpty == false else {
+            documentErrorMessage = "Der Scan enthaelt keine Seiten."
+            return
+        }
+
+        isImportingDocumentImage = true
+        defer { isImportingDocumentImage = false }
+
+        do {
+            let recognizedText = try await travelDocumentOCRService.recognizeText(inImageData: pages)
+            newDocumentFileName = ""
+            newDocumentExtractedText = recognizedText
+
+            if newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                newDocumentTitle = "Dokumentenscan"
+            }
+
+            documentImportSuccessMessage = pages.count == 1
+                ? "Eine gescannte Seite wurde erkannt und kann geprueft werden."
+                : "\(pages.count) gescannte Seiten wurden erkannt und koennen geprueft werden."
+        } catch TravelDocumentOCRError.unreadableImage {
+            documentErrorMessage = "Mindestens eine gescannte Seite konnte nicht gelesen werden."
+        } catch TravelDocumentOCRError.noRecognizedText {
+            documentErrorMessage = "Im gescannten Dokument wurde kein Text erkannt."
+        } catch {
+            documentErrorMessage = "Die Texterkennung des Scans ist fehlgeschlagen."
+        }
     }
 
     func importDocumentImage(from result: Result<[URL], Error>) async {
@@ -520,6 +573,7 @@ final class TripDetailViewModel {
             documentErrorMessage = nil
             documentImportSuccessMessage = nil
             isShowingDocumentImporter = false
+            isShowingDocumentScanner = false
             isImportingDocumentImage = false
             isShowingCreateDocument = false
         } catch TravelDocumentValidationError.emptyTitle {

@@ -819,6 +819,74 @@ struct TripFlowTests {
         #expect(trip.documents.isEmpty)
     }
 
+    @Test @MainActor func tripDetailImportsMultiPageScanForReviewWithoutSavingDocument() async throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(
+            trip: trip,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(
+                recognizedText: "Flug LH 2034\n\nGate A12"
+            )
+        )
+        viewModel.isShowingDocumentScanner = true
+
+        await viewModel.importScannedDocumentPages([Data([1]), Data([2])])
+
+        #expect(viewModel.newDocumentTitle == "Dokumentenscan")
+        #expect(viewModel.newDocumentFileName.isEmpty)
+        #expect(viewModel.newDocumentExtractedText == "Flug LH 2034\n\nGate A12")
+        #expect(viewModel.documentImportSuccessMessage == "2 gescannte Seiten wurden erkannt und koennen geprueft werden.")
+        #expect(viewModel.documentErrorMessage == nil)
+        #expect(viewModel.isShowingDocumentScanner == false)
+        #expect(viewModel.isImportingDocumentImage == false)
+        #expect(trip.documents.isEmpty)
+    }
+
+    @Test @MainActor func tripDetailKeepsExistingDraftWhenScannedTextCannotBeRead() async throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(
+            trip: trip,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(error: .unreadableImage)
+        )
+        viewModel.newDocumentTitle = "Bestehender Entwurf"
+        viewModel.newDocumentFileName = "ticket.png"
+        viewModel.newDocumentExtractedText = "Manueller Text"
+
+        await viewModel.importScannedDocumentPages([Data([1])])
+
+        #expect(viewModel.newDocumentTitle == "Bestehender Entwurf")
+        #expect(viewModel.newDocumentFileName == "ticket.png")
+        #expect(viewModel.newDocumentExtractedText == "Manueller Text")
+        #expect(viewModel.documentErrorMessage == "Mindestens eine gescannte Seite konnte nicht gelesen werden.")
+        #expect(viewModel.documentImportSuccessMessage == nil)
+        #expect(trip.documents.isEmpty)
+    }
+
+    @Test func tripDetailCancelsDocumentScannerWithoutChangingDraft() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        viewModel.newDocumentExtractedText = "Bestehender Text"
+
+        viewModel.showDocumentScanner()
+        viewModel.cancelDocumentScanner()
+
+        #expect(viewModel.isShowingDocumentScanner == false)
+        #expect(viewModel.newDocumentExtractedText == "Bestehender Text")
+        #expect(viewModel.documentErrorMessage == nil)
+    }
+
+    @Test func tripDetailReportsDocumentScannerFailureWithoutChangingDraft() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        viewModel.newDocumentExtractedText = "Bestehender Text"
+        viewModel.isShowingDocumentScanner = true
+
+        viewModel.failDocumentScanner()
+
+        #expect(viewModel.isShowingDocumentScanner == false)
+        #expect(viewModel.newDocumentExtractedText == "Bestehender Text")
+        #expect(viewModel.documentErrorMessage == "Das Dokument konnte nicht gescannt werden.")
+    }
+
     @Test @MainActor func tripDetailCreateDocumentClearsOldErrorOnNewAttempt() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let viewModel = TripDetailViewModel(trip: trip)
@@ -843,6 +911,7 @@ struct TripFlowTests {
         viewModel.documentErrorMessage = "Fehler"
         viewModel.documentImportSuccessMessage = "Importiert"
         viewModel.isShowingDocumentImporter = true
+        viewModel.isShowingDocumentScanner = true
         viewModel.isImportingDocumentImage = true
         viewModel.isShowingCreateDocument = true
 
@@ -855,6 +924,7 @@ struct TripFlowTests {
         #expect(viewModel.documentErrorMessage == nil)
         #expect(viewModel.documentImportSuccessMessage == nil)
         #expect(viewModel.isShowingDocumentImporter == false)
+        #expect(viewModel.isShowingDocumentScanner == false)
         #expect(viewModel.isImportingDocumentImage == false)
         #expect(viewModel.isShowingCreateDocument == false)
     }
@@ -1693,6 +1763,14 @@ private struct TravelDocumentOCRServiceStub: TravelDocumentTextRecognizing {
     }
 
     func recognizeText(inImageAt url: URL) async throws -> String {
+        if let error {
+            throw error
+        }
+
+        return recognizedText ?? ""
+    }
+
+    func recognizeText(inImageData pages: [Data]) async throws -> String {
         if let error {
             throw error
         }

@@ -17,6 +17,7 @@ enum TravelDocumentOCRError: Error {
 
 protocol TravelDocumentTextRecognizing {
     func recognizeText(inImageAt url: URL) async throws -> String
+    func recognizeText(inImageData pages: [Data]) async throws -> String
 }
 
 struct TravelDocumentOCRService: TravelDocumentTextRecognizing {
@@ -28,15 +29,41 @@ struct TravelDocumentOCRService: TravelDocumentTextRecognizing {
             }
         }
 
-        guard let image = UIImage(contentsOfFile: url.path),
-              let cgImage = image.cgImage else {
+        guard let imageData = try? Data(contentsOf: url) else {
             throw TravelDocumentOCRError.unreadableImage
         }
 
-        return try await recognizeText(
-            in: cgImage,
-            orientation: CGImagePropertyOrientation(image.imageOrientation)
-        )
+        return try await recognizeText(inImageData: [imageData])
+    }
+
+    func recognizeText(inImageData pages: [Data]) async throws -> String {
+        guard pages.isEmpty == false else {
+            throw TravelDocumentOCRError.unreadableImage
+        }
+
+        var recognizedPages: [String] = []
+
+        for page in pages {
+            guard let image = UIImage(data: page),
+                  let cgImage = image.cgImage else {
+                throw TravelDocumentOCRError.unreadableImage
+            }
+
+            let text = try await recognizeText(
+                in: cgImage,
+                orientation: CGImagePropertyOrientation(image.imageOrientation)
+            )
+
+            if text.isEmpty == false {
+                recognizedPages.append(text)
+            }
+        }
+
+        guard recognizedPages.isEmpty == false else {
+            throw TravelDocumentOCRError.noRecognizedText
+        }
+
+        return recognizedPages.joined(separator: "\n\n")
     }
 
     private func recognizeText(
@@ -54,11 +81,6 @@ struct TravelDocumentOCRService: TravelDocumentTextRecognizing {
                     .compactMap { $0.topCandidates(1).first?.string }
                     .joined(separator: "\n")
                     .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-
-                guard text.isEmpty == false else {
-                    continuation.resume(throwing: TravelDocumentOCRError.noRecognizedText)
-                    return
-                }
 
                 continuation.resume(returning: text)
             }

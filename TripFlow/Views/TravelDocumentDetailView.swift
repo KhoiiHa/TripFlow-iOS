@@ -38,6 +38,17 @@ struct TravelDocumentDetailView: View {
         .sheet(isPresented: $viewModel.isShowingStopSuggestion) {
             stopSuggestionSheet
         }
+        .sheet(
+            isPresented: $viewModel.isShowingSourcePreview,
+            onDismiss: {
+                viewModel.dismissSourcePreview()
+            }
+        ) {
+            if let sourcePreviewURL = viewModel.sourcePreviewURL {
+                TravelDocumentQuickLookView(url: sourcePreviewURL)
+                    .ignoresSafeArea()
+            }
+        }
     }
 
     private var documentEditingSection: some View {
@@ -45,6 +56,14 @@ struct TravelDocumentDetailView: View {
             TextField("Name", text: $viewModel.title)
             TextField("Typ optional", text: $viewModel.documentType)
             TextField("Dateiname optional", text: $viewModel.fileName)
+
+            if viewModel.hasSourceDocument {
+                Button {
+                    viewModel.showSourcePreview(for: document)
+                } label: {
+                    Label("Original anzeigen", systemImage: "doc.text.magnifyingglass")
+                }
+            }
         }
     }
 
@@ -190,6 +209,12 @@ struct TravelDocumentDetailView: View {
 
         if let errorMessage = viewModel.errorMessage {
             Text(errorMessage)
+                .font(.footnote)
+                .foregroundStyle(.red)
+        }
+
+        if let sourcePreviewErrorMessage = viewModel.sourcePreviewErrorMessage {
+            Text(sourcePreviewErrorMessage)
                 .font(.footnote)
                 .foregroundStyle(.red)
         }

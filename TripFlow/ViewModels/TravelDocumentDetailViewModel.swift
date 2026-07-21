@@ -33,6 +33,10 @@ final class TravelDocumentDetailViewModel {
     var stopSuggestionReservationNumber = ""
     var stopSuggestionErrorMessage: String?
     var stopSuggestionSuccessMessage: String?
+    var isShowingSourcePreview = false
+    var sourcePreviewURL: URL?
+    var sourcePreviewErrorMessage: String?
+    let hasSourceDocument: Bool
 
     var canSave: Bool {
         saveDisabledReason == nil
@@ -69,20 +73,54 @@ final class TravelDocumentDetailViewModel {
     private let travelDocumentService: TravelDocumentService
     private let travelDocumentParserService: TravelDocumentParserService
     private let stopService: StopService
+    private let travelDocumentSourcePreviewService: any TravelDocumentSourcePreviewing
 
     init(
         document: TravelDocument,
         travelDocumentService: TravelDocumentService = TravelDocumentService(),
         travelDocumentParserService: TravelDocumentParserService = TravelDocumentParserService(),
-        stopService: StopService = StopService()
+        stopService: StopService = StopService(),
+        travelDocumentSourcePreviewService: any TravelDocumentSourcePreviewing = TravelDocumentSourceService()
     ) {
         title = document.title
         documentType = document.documentType
         fileName = document.fileName
         extractedText = document.extractedText
+        hasSourceDocument = document.sourceData != nil
         self.travelDocumentService = travelDocumentService
         self.travelDocumentParserService = travelDocumentParserService
         self.stopService = stopService
+        self.travelDocumentSourcePreviewService = travelDocumentSourcePreviewService
+    }
+
+    func showSourcePreview(for document: TravelDocument) {
+        sourcePreviewErrorMessage = nil
+
+        guard let sourceData = document.sourceData else {
+            sourcePreviewErrorMessage = "Fuer diese Reiseunterlage ist keine Originaldatei gespeichert."
+            return
+        }
+
+        do {
+            sourcePreviewURL = try travelDocumentSourcePreviewService.temporaryPreviewURL(
+                for: sourceData,
+                fileName: document.fileName
+            )
+            isShowingSourcePreview = true
+        } catch {
+            sourcePreviewURL = nil
+            isShowingSourcePreview = false
+            sourcePreviewErrorMessage = "Die Originaldatei konnte nicht angezeigt werden."
+        }
+    }
+
+    func dismissSourcePreview() {
+        if let sourcePreviewURL {
+            travelDocumentSourcePreviewService.removeTemporaryPreview(at: sourcePreviewURL)
+        }
+
+        sourcePreviewURL = nil
+        isShowingSourcePreview = false
     }
 
     func parsedTravelDocumentResult(calendar: Calendar = .current) -> TravelDocumentParseResult {

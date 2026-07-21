@@ -11,6 +11,7 @@ import UIKit
 enum TravelDocumentSourceError: Error {
     case unreadableFile
     case unreadableScanPage
+    case previewUnavailable
 }
 
 protocol TravelDocumentSourcePreparing {
@@ -18,7 +19,12 @@ protocol TravelDocumentSourcePreparing {
     func pdfData(fromScannedPages pages: [Data]) throws -> Data
 }
 
-struct TravelDocumentSourceService: TravelDocumentSourcePreparing {
+protocol TravelDocumentSourcePreviewing {
+    func temporaryPreviewURL(for data: Data, fileName: String) throws -> URL
+    func removeTemporaryPreview(at url: URL)
+}
+
+struct TravelDocumentSourceService: TravelDocumentSourcePreparing, TravelDocumentSourcePreviewing {
     func data(from url: URL) throws -> Data {
         let hasSecurityScopedAccess = url.startAccessingSecurityScopedResource()
         defer {
@@ -59,6 +65,35 @@ struct TravelDocumentSourceService: TravelDocumentSourcePreparing {
                 image.draw(in: aspectFitRect(for: image.size, inside: contentBounds))
             }
         }
+    }
+
+    func temporaryPreviewURL(for data: Data, fileName: String) throws -> URL {
+        guard data.isEmpty == false else {
+            throw TravelDocumentSourceError.previewUnavailable
+        }
+
+        let previewDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("TripFlowPreviews", isDirectory: true)
+        let sourceFileName = URL(fileURLWithPath: fileName).lastPathComponent
+        let previewFileName = sourceFileName.isEmpty ? "Reiseunterlage" : sourceFileName
+        let previewURL = previewDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(URL(fileURLWithPath: previewFileName).pathExtension)
+
+        do {
+            try FileManager.default.createDirectory(
+                at: previewDirectory,
+                withIntermediateDirectories: true
+            )
+            try data.write(to: previewURL, options: .atomic)
+            return previewURL
+        } catch {
+            throw TravelDocumentSourceError.previewUnavailable
+        }
+    }
+
+    func removeTemporaryPreview(at url: URL) {
+        try? FileManager.default.removeItem(at: url)
     }
 
     private func aspectFitRect(for imageSize: CGSize, inside bounds: CGRect) -> CGRect {

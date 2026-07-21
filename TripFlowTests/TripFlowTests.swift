@@ -946,6 +946,23 @@ struct TripFlowTests {
         #expect(sourceData == expectedData)
     }
 
+    @Test @MainActor func documentSourceCreatesAndRemovesTemporaryPreviewFile() throws {
+        let sourceData = Data("preview document".utf8)
+        let service = TravelDocumentSourceService()
+
+        let previewURL = try service.temporaryPreviewURL(
+            for: sourceData,
+            fileName: "ticket.pdf"
+        )
+
+        #expect(previewURL.pathExtension == "pdf")
+        #expect(try Data(contentsOf: previewURL) == sourceData)
+
+        service.removeTemporaryPreview(at: previewURL)
+
+        #expect(FileManager.default.fileExists(atPath: previewURL.path) == false)
+    }
+
     @Test @MainActor func tripDetailStoresImportedSourceOnlyAfterDocumentConfirmation() async throws {
         let sourceData = Data("original document".utf8)
         let trip = try tripService.createTrip(title: "Berlin")
@@ -1192,6 +1209,52 @@ struct TripFlowTests {
         #expect(viewModel.documentType == "Hotel")
         #expect(viewModel.fileName == "hotel.pdf")
         #expect(viewModel.extractedText == "Check-in 15:00")
+        #expect(viewModel.hasSourceDocument == false)
+    }
+
+    @Test @MainActor func documentDetailShowsAndCleansUpOriginalPreview() throws {
+        let sourceData = Data("original pdf".utf8)
+        let previewURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("document-preview.pdf")
+        let previewService = TravelDocumentSourcePreviewServiceStub(
+            result: .success(previewURL)
+        )
+        let document = TravelDocument(
+            title: "Boarding Pass",
+            fileName: "boarding-pass.pdf",
+            sourceData: sourceData
+        )
+        let viewModel = TravelDocumentDetailViewModel(
+            document: document,
+            travelDocumentSourcePreviewService: previewService
+        )
+
+        #expect(viewModel.hasSourceDocument)
+
+        viewModel.showSourcePreview(for: document)
+
+        #expect(viewModel.isShowingSourcePreview)
+        #expect(viewModel.sourcePreviewURL == previewURL)
+        #expect(viewModel.sourcePreviewErrorMessage == nil)
+        #expect(previewService.receivedData == sourceData)
+        #expect(previewService.receivedFileName == "boarding-pass.pdf")
+
+        viewModel.dismissSourcePreview()
+
+        #expect(viewModel.isShowingSourcePreview == false)
+        #expect(viewModel.sourcePreviewURL == nil)
+        #expect(previewService.removedURL == previewURL)
+    }
+
+    @Test @MainActor func documentDetailExplainsMissingOriginalPreview() {
+        let document = TravelDocument(title: "Manuelle Notiz")
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        viewModel.showSourcePreview(for: document)
+
+        #expect(viewModel.isShowingSourcePreview == false)
+        #expect(viewModel.sourcePreviewURL == nil)
+        #expect(viewModel.sourcePreviewErrorMessage == "Fuer diese Reiseunterlage ist keine Originaldatei gespeichert.")
     }
 
     @Test func documentDetailParsesScheduleFromExtractedText() {
@@ -2011,6 +2074,28 @@ private struct TravelDocumentSourceServiceStub: TravelDocumentSourcePreparing {
 
     func pdfData(fromScannedPages pages: [Data]) throws -> Data {
         sourceData
+    }
+}
+
+@MainActor
+private final class TravelDocumentSourcePreviewServiceStub: TravelDocumentSourcePreviewing {
+    let result: Result<URL, Error>
+    private(set) var receivedData: Data?
+    private(set) var receivedFileName: String?
+    private(set) var removedURL: URL?
+
+    init(result: Result<URL, Error>) {
+        self.result = result
+    }
+
+    func temporaryPreviewURL(for data: Data, fileName: String) throws -> URL {
+        receivedData = data
+        receivedFileName = fileName
+        return try result.get()
+    }
+
+    func removeTemporaryPreview(at url: URL) {
+        removedURL = url
     }
 }
 

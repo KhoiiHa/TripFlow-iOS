@@ -932,6 +932,38 @@ struct TripFlowTests {
         #expect(recognizedText.contains("05.08.2026"))
     }
 
+    @Test func tripDetailBuildsReviewForRecognizedDocumentDraft() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        viewModel.newDocumentExtractedText = """
+        Flug LH 2034 am 05.08.2026 um 09:05
+        Adresse: Flughafen Berlin Brandenburg
+        Buchungsnummer: XYZ789
+        """
+
+        let items = viewModel.newDocumentRecognitionSummaryItems(
+            calendar: testCalendar()
+        )
+
+        #expect(viewModel.hasNewDocumentExtractedText)
+        #expect(items.map(\.id) == ["stopTitle", "schedule", "location", "reference"])
+        #expect(items.first(where: { $0.id == "stopTitle" })?.value == "Flug")
+        #expect(items.first(where: { $0.id == "schedule" })?.value == "5. August 2026, 09:05")
+        #expect(items.first(where: { $0.id == "location" })?.value == "Flughafen Berlin Brandenburg")
+        #expect(items.first(where: { $0.id == "reference" })?.value == "Flug LH2034 - Ref XYZ789")
+        #expect(trip.documents.isEmpty)
+    }
+
+    @Test func tripDetailReportsUnstructuredDocumentDraftWithoutSummary() throws {
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(trip: trip)
+        viewModel.newDocumentExtractedText = "Vielen Dank fuer Ihre Buchung."
+
+        #expect(viewModel.hasNewDocumentExtractedText)
+        #expect(viewModel.newDocumentRecognitionSummaryItems().isEmpty)
+        #expect(trip.documents.isEmpty)
+    }
+
     @Test @MainActor func tripDetailCreateDocumentClearsOldErrorOnNewAttempt() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let viewModel = TripDetailViewModel(trip: trip)

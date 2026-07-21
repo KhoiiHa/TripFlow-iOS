@@ -683,6 +683,33 @@ struct TripDetailView: View {
                     }
                 }
 
+                if viewModel.hasNewDocumentExtractedText {
+                    Section("Erkannte Reisedaten") {
+                        let summaryItems = viewModel.newDocumentRecognitionSummaryItems()
+
+                        if summaryItems.isEmpty {
+                            Label {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("Keine klaren Reisedaten erkannt")
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+
+                                    Text("Der OCR-Text kann vor dem Speichern korrigiert werden.")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+                            } icon: {
+                                Image(systemName: "text.magnifyingglass")
+                                    .foregroundStyle(.secondary)
+                            }
+                        } else {
+                            ForEach(summaryItems) { item in
+                                newDocumentRecognitionSummaryRow(item)
+                            }
+                        }
+                    }
+                }
+
                 Section("OCR-Text optional") {
                     TextEditor(text: $viewModel.newDocumentExtractedText)
                         .frame(minHeight: 120)
@@ -754,6 +781,19 @@ struct TripDetailView: View {
                 }
             }
         }
+    }
+
+    private func newDocumentRecognitionSummaryRow(
+        _ item: TravelDocumentRecognitionSummaryItem
+    ) -> some View {
+        Label {
+            LabeledContent(item.title, value: item.value)
+                .font(.subheadline)
+        } icon: {
+            Image(systemName: item.systemImage)
+                .foregroundStyle(.blue)
+        }
+        .padding(.vertical, 2)
     }
 
     private var newStopScheduledDateBinding: Binding<Date> {

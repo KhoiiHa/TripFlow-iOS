@@ -134,6 +134,10 @@ final class TripDetailViewModel {
         "Importierter oder eingefuegter OCR-Text wird nach dem Speichern fuer erkannte Reisedaten und Stop-Vorschlaege genutzt."
     }
 
+    var hasNewDocumentExtractedText: Bool {
+        newDocumentExtractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
+
     private let tripService: TripService
     private let stopService: StopService
     private let travelDocumentService: TravelDocumentService
@@ -301,6 +305,68 @@ final class TripDetailViewModel {
         )
 
         return badges
+    }
+
+    func newDocumentRecognitionSummaryItems(
+        calendar: Calendar = .current
+    ) -> [TravelDocumentRecognitionSummaryItem] {
+        let result = travelDocumentParserService.parse(
+            newDocumentExtractedText,
+            calendar: calendar
+        )
+        var items: [TravelDocumentRecognitionSummaryItem] = []
+
+        if let suggestedStopTitle = result.suggestedStopTitle {
+            items.append(
+                TravelDocumentRecognitionSummaryItem(
+                    id: "stopTitle",
+                    title: "Stop",
+                    value: suggestedStopTitle,
+                    systemImage: "mappin.and.ellipse"
+                )
+            )
+        }
+
+        if let scheduledDate = result.scheduledDate {
+            items.append(
+                TravelDocumentRecognitionSummaryItem(
+                    id: "schedule",
+                    title: "Zeitpunkt",
+                    value: DateDisplayFormatter.dateTime(scheduledDate, calendar: calendar),
+                    systemImage: "calendar"
+                )
+            )
+        }
+
+        if let suggestedLocationName = result.suggestedLocationName {
+            items.append(
+                TravelDocumentRecognitionSummaryItem(
+                    id: "location",
+                    title: "Ort",
+                    value: suggestedLocationName,
+                    systemImage: "location"
+                )
+            )
+        }
+
+        let references = [
+            result.flightNumber.map { "Flug \($0)" },
+            result.trainNumber.map { "Zug \($0)" },
+            result.reservationNumber.map { "Ref \($0)" },
+        ].compactMap { $0 }
+
+        if references.isEmpty == false {
+            items.append(
+                TravelDocumentRecognitionSummaryItem(
+                    id: "reference",
+                    title: "Referenz",
+                    value: references.joined(separator: " - "),
+                    systemImage: "number"
+                )
+            )
+        }
+
+        return items
     }
 
     func parsedScheduleDate(for document: TravelDocument, calendar: Calendar = .current) -> Date? {

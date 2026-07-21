@@ -335,6 +335,7 @@ struct TripFlowTests {
         let result = travelDocumentParserService.parse("Boarding LH 2034 Gate A12 05/08/26 09:05")
 
         #expect(result.flightNumber == "LH2034")
+        #expect(result.suggestedStopTitle == "Flug LH2034")
     }
 
     @Test func parserExtractsTrainNumberFromRailText() {
@@ -574,6 +575,7 @@ struct TripFlowTests {
 
         viewModel.showCreateStop(from: document, calendar: testCalendar())
 
+        #expect(viewModel.newStopTitle == "Flug LH2034")
         #expect(viewModel.stopSuggestionFlightNumber == "LH2034")
     }
 
@@ -947,7 +949,7 @@ struct TripFlowTests {
 
         #expect(viewModel.hasNewDocumentExtractedText)
         #expect(items.map(\.id) == ["stopTitle", "schedule", "location", "reference"])
-        #expect(items.first(where: { $0.id == "stopTitle" })?.value == "Flug")
+        #expect(items.first(where: { $0.id == "stopTitle" })?.value == "Flug LH2034")
         #expect(items.first(where: { $0.id == "schedule" })?.value == "5. August 2026, 09:05")
         #expect(items.first(where: { $0.id == "location" })?.value == "Flughafen Berlin Brandenburg")
         #expect(items.first(where: { $0.id == "reference" })?.value == "Flug LH2034 - Ref XYZ789")
@@ -1108,7 +1110,7 @@ struct TripFlowTests {
         let items = viewModel.recognitionSummaryItems(calendar: testCalendar())
 
         #expect(items.map(\.id) == ["stopTitle", "schedule", "location", "reference"])
-        #expect(items.first { $0.id == "stopTitle" }?.value == "Flug")
+        #expect(items.first { $0.id == "stopTitle" }?.value == "Flug LH2034")
         #expect(items.first { $0.id == "schedule" }?.value == "5. August 2026, 09:05")
         #expect(items.first { $0.id == "location" }?.value == "Gate A12")
         #expect(items.first { $0.id == "reference" }?.value == "Flug LH2034 - Ref XYZ789")
@@ -1178,7 +1180,7 @@ struct TripFlowTests {
         viewModel.showStopSuggestion(from: document, calendar: testCalendar())
 
         #expect(viewModel.isShowingStopSuggestion)
-        #expect(viewModel.stopSuggestionTitle == "Flug")
+        #expect(viewModel.stopSuggestionTitle == "Flug LH2034")
         #expect(viewModel.stopSuggestionLocationName == "")
         #expect(viewModel.stopSuggestionScheduledDate == makeDate(year: 2026, month: 8, day: 5, hour: 9, minute: 5, calendar: testCalendar()))
         #expect(viewModel.stopSuggestionDocumentType == "")

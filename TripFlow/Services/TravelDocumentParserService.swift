@@ -37,7 +37,11 @@ struct TravelDocumentParserService {
         let suggestedLocationName = parseSuggestedLocationName(in: text)
         let flightNumber = parseFlightNumber(in: text)
         let trainNumber = parseTrainNumber(in: text)
-        let suggestedStopTitle = parseSuggestedStopTitle(in: text, trainNumber: trainNumber)
+        let suggestedStopTitle = parseSuggestedStopTitle(
+            in: text,
+            flightNumber: flightNumber,
+            trainNumber: trainNumber
+        )
         let reservationNumber = parseReservationNumber(in: text)
 
         return TravelDocumentParseResult(
@@ -105,7 +109,11 @@ struct TravelDocumentParserService {
         ).date
     }
 
-    private func parseSuggestedStopTitle(in text: String, trainNumber: String?) -> String? {
+    private func parseSuggestedStopTitle(
+        in text: String,
+        flightNumber: String?,
+        trainNumber: String?
+    ) -> String? {
         let normalizedText = text.folding(
             options: [.caseInsensitive, .diacriticInsensitive],
             locale: .current
@@ -122,6 +130,10 @@ struct TravelDocumentParserService {
             || normalizedText.contains("flight")
             || normalizedText.contains("boarding")
             || normalizedText.contains("gate") {
+            if let flightNumber {
+                return "Flug \(flightNumber)"
+            }
+
             return "Flug"
         }
 

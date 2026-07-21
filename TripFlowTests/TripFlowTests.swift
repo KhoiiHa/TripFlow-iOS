@@ -429,12 +429,16 @@ struct TripFlowTests {
             Bahn ICE 100 15.07.2026 08:30
             Von: Berlin Hbf
             Nach: Hamburg Hbf
-            """
+            """,
+            calendar: testCalendar()
         )
 
         #expect(result.departureLocationName == "Berlin Hbf")
         #expect(result.arrivalLocationName == "Hamburg Hbf")
         #expect(result.suggestedLocationName == "Hamburg Hbf")
+        #expect(result.departureScheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 8, minute: 30, calendar: testCalendar()))
+        #expect(result.arrivalScheduledDate == nil)
+        #expect(result.scheduledDate == nil)
     }
 
     @Test func parserRecognizesEnglishDepartureAndArrivalLabels() {
@@ -455,13 +459,54 @@ struct TripFlowTests {
         let result = travelDocumentParserService.parse(
             """
             Bahn ICE 100 15.07.2026 08:30
-            Abfahrt: Berlin Hbf
-            """
+            Von: Berlin Hbf
+            """,
+            calendar: testCalendar()
         )
 
         #expect(result.departureLocationName == "Berlin Hbf")
         #expect(result.arrivalLocationName == nil)
         #expect(result.suggestedLocationName == "Berlin Hbf")
+        #expect(result.scheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 8, minute: 30, calendar: testCalendar()))
+    }
+
+    @Test func parserSeparatesDepartureAndArrivalSchedules() {
+        let result = travelDocumentParserService.parse(
+            """
+            Bahn ICE 100
+            Von: Berlin Hbf
+            Abfahrt: 15.07.2026 08:30
+            Nach: Hamburg Hbf
+            Ankunft: 15.07.2026 10:45
+            """,
+            calendar: testCalendar()
+        )
+
+        let departure = makeDate(year: 2026, month: 7, day: 15, hour: 8, minute: 30, calendar: testCalendar())
+        let arrival = makeDate(year: 2026, month: 7, day: 15, hour: 10, minute: 45, calendar: testCalendar())
+
+        #expect(result.departureScheduledDate == departure)
+        #expect(result.arrivalScheduledDate == arrival)
+        #expect(result.scheduledDate == arrival)
+        #expect(result.date == TravelDocumentParsedDate(day: 15, month: 7, year: 2026))
+        #expect(result.time == TravelDocumentParsedTime(hour: 10, minute: 45))
+    }
+
+    @Test func parserUsesDocumentDateForLabeledArrivalTime() {
+        let result = travelDocumentParserService.parse(
+            """
+            Flug LH 2034 am 05.08.2026
+            From: Berlin BER
+            Departure: 09:05
+            To: Lisbon LIS
+            Arrival: 11:40
+            """,
+            calendar: testCalendar()
+        )
+
+        #expect(result.departureScheduledDate == makeDate(year: 2026, month: 8, day: 5, hour: 9, minute: 5, calendar: testCalendar()))
+        #expect(result.arrivalScheduledDate == makeDate(year: 2026, month: 8, day: 5, hour: 11, minute: 40, calendar: testCalendar()))
+        #expect(result.scheduledDate == result.arrivalScheduledDate)
     }
 
     @Test func tripDetailSortsDocumentsNewestFirst() throws {
@@ -1303,16 +1348,20 @@ struct TripFlowTests {
         let trip = try tripService.createTrip(title: "Europa")
         let viewModel = TripDetailViewModel(trip: trip)
         viewModel.newDocumentExtractedText = """
-        Bahn ICE 100 15.07.2026 08:30
+        Bahn ICE 100
         Von: Berlin Hbf
+        Abfahrt: 15.07.2026 08:30
         Nach: Hamburg Hbf
+        Ankunft: 15.07.2026 10:45
         """
 
         let items = viewModel.newDocumentRecognitionSummaryItems(calendar: testCalendar())
 
-        #expect(items.map(\.id) == ["stopTitle", "schedule", "departure", "arrival", "reference"])
+        #expect(items.map(\.id) == ["stopTitle", "departure", "departureSchedule", "arrival", "arrivalSchedule", "reference"])
         #expect(items.first { $0.id == "departure" }?.value == "Berlin Hbf")
+        #expect(items.first { $0.id == "departureSchedule" }?.value == "15. Juli 2026, 08:30")
         #expect(items.first { $0.id == "arrival" }?.value == "Hamburg Hbf")
+        #expect(items.first { $0.id == "arrivalSchedule" }?.value == "15. Juli 2026, 10:45")
     }
 
     @Test func tripDetailOffersStopReviewOnlyForCompleteScheduleInDraft() throws {
@@ -1774,9 +1823,11 @@ struct TripFlowTests {
         let document = try travelDocumentService.createDocument(
             title: "Bahnticket",
             extractedText: """
-            Bahn ICE 100 15.07.2026 08:30
+            Bahn ICE 100
             Von: Berlin Hbf
+            Abfahrt: 15.07.2026 08:30
             Nach: Hamburg Hbf
+            Ankunft: 15.07.2026 10:45
             """,
             for: trip
         )
@@ -1785,10 +1836,33 @@ struct TripFlowTests {
         let items = viewModel.recognitionSummaryItems(calendar: testCalendar())
         viewModel.showStopSuggestion(from: document, calendar: testCalendar())
 
-        #expect(items.map(\.id) == ["stopTitle", "schedule", "departure", "arrival", "reference"])
+        #expect(items.map(\.id) == ["stopTitle", "departure", "departureSchedule", "arrival", "arrivalSchedule", "reference"])
         #expect(viewModel.parsedDepartureLocationName(calendar: testCalendar()) == "Berlin Hbf")
         #expect(viewModel.parsedArrivalLocationName(calendar: testCalendar()) == "Hamburg Hbf")
+        #expect(viewModel.parsedDepartureScheduleText(calendar: testCalendar()) == "15. Juli 2026, 08:30")
+        #expect(viewModel.parsedArrivalScheduleText(calendar: testCalendar()) == "15. Juli 2026, 10:45")
         #expect(viewModel.stopSuggestionLocationName == "Hamburg Hbf")
+        #expect(viewModel.stopSuggestionScheduledDate == makeDate(year: 2026, month: 7, day: 15, hour: 10, minute: 45, calendar: testCalendar()))
+    }
+
+    @Test func documentDetailExplainsMissingArrivalTimeForCompleteRoute() throws {
+        let trip = try tripService.createTrip(title: "Europa")
+        let document = try travelDocumentService.createDocument(
+            title: "Bahnticket",
+            extractedText: """
+            Bahn ICE 100 15.07.2026 08:30
+            Von: Berlin Hbf
+            Nach: Hamburg Hbf
+            """,
+            for: trip
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        #expect(viewModel.canShowStopSuggestionAction(for: document, calendar: testCalendar()) == false)
+        #expect(
+            viewModel.stopSuggestionUnavailableMessage(for: document, calendar: testCalendar())
+                == "Kein Stop-Vorschlag: Fuer das erkannte Ziel fehlt noch eine Ankunftszeit."
+        )
     }
 
     @Test func documentDetailParsesTrainNumberMetadata() {

@@ -337,7 +337,9 @@ final class TripDetailViewModel {
             )
         }
 
-        if let scheduledDate = result.scheduledDate {
+        if result.departureScheduledDate == nil,
+           result.arrivalScheduledDate == nil,
+           let scheduledDate = result.scheduledDate {
             items.append(
                 TravelDocumentRecognitionSummaryItem(
                     id: "schedule",
@@ -359,6 +361,17 @@ final class TripDetailViewModel {
             )
         }
 
+        if let departureScheduledDate = result.departureScheduledDate {
+            items.append(
+                TravelDocumentRecognitionSummaryItem(
+                    id: "departureSchedule",
+                    title: "Abfahrtszeit",
+                    value: DateDisplayFormatter.dateTime(departureScheduledDate, calendar: calendar),
+                    systemImage: "clock.arrow.circlepath"
+                )
+            )
+        }
+
         if let arrivalLocationName = result.arrivalLocationName {
             items.append(
                 TravelDocumentRecognitionSummaryItem(
@@ -366,6 +379,17 @@ final class TripDetailViewModel {
                     title: "Ankunft",
                     value: arrivalLocationName,
                     systemImage: "arrow.down.right.circle"
+                )
+            )
+        }
+
+        if let arrivalScheduledDate = result.arrivalScheduledDate {
+            items.append(
+                TravelDocumentRecognitionSummaryItem(
+                    id: "arrivalSchedule",
+                    title: "Ankunftszeit",
+                    value: DateDisplayFormatter.dateTime(arrivalScheduledDate, calendar: calendar),
+                    systemImage: "clock.badge.checkmark"
                 )
             )
         }

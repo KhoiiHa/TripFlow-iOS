@@ -335,7 +335,9 @@ final class TravelDocumentDetailViewModel {
             )
         }
 
-        if let scheduledDate = result.scheduledDate {
+        if result.departureScheduledDate == nil,
+           result.arrivalScheduledDate == nil,
+           let scheduledDate = result.scheduledDate {
             items.append(
                 TravelDocumentRecognitionSummaryItem(
                     id: "schedule",
@@ -357,6 +359,17 @@ final class TravelDocumentDetailViewModel {
             )
         }
 
+        if let departureScheduledDate = result.departureScheduledDate {
+            items.append(
+                TravelDocumentRecognitionSummaryItem(
+                    id: "departureSchedule",
+                    title: "Abfahrtszeit",
+                    value: scheduleText(for: departureScheduledDate, calendar: calendar),
+                    systemImage: "clock.arrow.circlepath"
+                )
+            )
+        }
+
         if let arrivalLocationName = result.arrivalLocationName {
             items.append(
                 TravelDocumentRecognitionSummaryItem(
@@ -364,6 +377,17 @@ final class TravelDocumentDetailViewModel {
                     title: "Ankunft",
                     value: arrivalLocationName,
                     systemImage: "arrow.down.right.circle"
+                )
+            )
+        }
+
+        if let arrivalScheduledDate = result.arrivalScheduledDate {
+            items.append(
+                TravelDocumentRecognitionSummaryItem(
+                    id: "arrivalSchedule",
+                    title: "Ankunftszeit",
+                    value: scheduleText(for: arrivalScheduledDate, calendar: calendar),
+                    systemImage: "clock.badge.checkmark"
                 )
             )
         }
@@ -414,6 +438,22 @@ final class TravelDocumentDetailViewModel {
         return scheduleText(for: scheduledDate, calendar: calendar)
     }
 
+    func parsedDepartureScheduleText(calendar: Calendar = .current) -> String? {
+        guard let scheduledDate = parsedTravelDocumentResult(calendar: calendar).departureScheduledDate else {
+            return nil
+        }
+
+        return scheduleText(for: scheduledDate, calendar: calendar)
+    }
+
+    func parsedArrivalScheduleText(calendar: Calendar = .current) -> String? {
+        guard let scheduledDate = parsedTravelDocumentResult(calendar: calendar).arrivalScheduledDate else {
+            return nil
+        }
+
+        return scheduleText(for: scheduledDate, calendar: calendar)
+    }
+
     private func scheduleText(for scheduledDate: Date, calendar: Calendar) -> String {
         DateDisplayFormatter.dateTime(scheduledDate, calendar: calendar)
     }
@@ -455,8 +495,16 @@ final class TravelDocumentDetailViewModel {
             return nil
         }
 
-        guard parsedTravelDocumentResult(calendar: calendar).scheduledDate == nil else {
+        let result = parsedTravelDocumentResult(calendar: calendar)
+
+        guard result.scheduledDate == nil else {
             return nil
+        }
+
+        if result.departureLocationName != nil,
+           result.arrivalLocationName != nil,
+           result.arrivalScheduledDate == nil {
+            return "Kein Stop-Vorschlag: Fuer das erkannte Ziel fehlt noch eine Ankunftszeit."
         }
 
         return "Kein Stop-Vorschlag: Im OCR-Text wurde noch kein Datum erkannt."

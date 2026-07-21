@@ -26,6 +26,8 @@ struct TravelDocumentParseResult: Equatable {
     let suggestedLocationName: String?
     let departureLocationName: String?
     let arrivalLocationName: String?
+    let departureScheduledDate: Date?
+    let arrivalScheduledDate: Date?
     let flightNumber: String?
     let trainNumber: String?
     let reservationNumber: String?
@@ -33,18 +35,20 @@ struct TravelDocumentParseResult: Equatable {
 
 struct TravelDocumentParserService {
     func parse(_ text: String, calendar: Calendar = .current) -> TravelDocumentParseResult {
-        let date = parseDate(in: text)
-        let time = parseTime(in: text)
-        let scheduledDate = makeDate(from: date, time: time, calendar: calendar)
+        let fallbackDate = parseDate(in: text)
+        let fallbackTime = parseTime(in: text)
+        let fallbackSchedule = makeSchedule(
+            date: fallbackDate,
+            time: fallbackTime,
+            calendar: calendar
+        )
         let departureLocationName = parseLocationName(
             in: text,
-            labels: ["von", "from", "abfahrt", "departure", "start", "origin"],
-            allowsLabelSuffix: true
+            labels: ["von", "from", "start", "origin", "abfahrtsort", "departure airport", "departure station"]
         )
         let arrivalLocationName = parseLocationName(
             in: text,
-            labels: ["nach", "to", "ankunft", "arrival", "ziel", "destination"],
-            allowsLabelSuffix: true
+            labels: ["nach", "to", "ziel", "destination", "ankunftsort", "arrival airport", "arrival station"]
         )
         let genericLocationName = parseLocationName(
             in: text,
@@ -53,6 +57,24 @@ struct TravelDocumentParserService {
         let suggestedLocationName = arrivalLocationName
             ?? genericLocationName
             ?? departureLocationName
+        let parsedDepartureSchedule = parseLabeledSchedule(
+            in: text,
+            labels: ["abfahrt", "departure", "abflug", "depart"],
+            fallbackDate: fallbackDate,
+            calendar: calendar
+        )
+        let departureSchedule = parsedDepartureSchedule
+            ?? (departureLocationName == nil ? nil : fallbackSchedule)
+        let arrivalSchedule = parseLabeledSchedule(
+            in: text,
+            labels: ["ankunft", "arrival", "landung", "arrive"],
+            fallbackDate: fallbackDate,
+            calendar: calendar
+        )
+        let hasCompleteRoute = departureLocationName != nil && arrivalLocationName != nil
+        let suggestedSchedule = hasCompleteRoute
+            ? arrivalSchedule
+            : (arrivalSchedule ?? departureSchedule ?? fallbackSchedule)
         let flightNumber = parseFlightNumber(in: text)
         let trainNumber = parseTrainNumber(in: text)
         let suggestedStopTitle = parseSuggestedStopTitle(
@@ -63,13 +85,15 @@ struct TravelDocumentParserService {
         let reservationNumber = parseReservationNumber(in: text)
 
         return TravelDocumentParseResult(
-            date: date,
-            time: time,
-            scheduledDate: scheduledDate,
+            date: suggestedSchedule?.date ?? fallbackDate,
+            time: suggestedSchedule?.time ?? fallbackTime,
+            scheduledDate: suggestedSchedule?.scheduledDate,
             suggestedStopTitle: suggestedStopTitle,
             suggestedLocationName: suggestedLocationName,
             departureLocationName: departureLocationName,
             arrivalLocationName: arrivalLocationName,
+            departureScheduledDate: departureSchedule?.scheduledDate,
+            arrivalScheduledDate: arrivalSchedule?.scheduledDate,
             flightNumber: flightNumber,
             trainNumber: trainNumber,
             reservationNumber: reservationNumber
@@ -129,6 +153,50 @@ struct TravelDocumentParserService {
         ).date
     }
 
+    private func makeSchedule(
+        date: TravelDocumentParsedDate?,
+        time: TravelDocumentParsedTime?,
+        calendar: Calendar
+    ) -> ParsedSchedule? {
+        guard let date,
+              let time,
+              let scheduledDate = makeDate(from: date, time: time, calendar: calendar) else {
+            return nil
+        }
+
+        return ParsedSchedule(
+            date: date,
+            time: time,
+            scheduledDate: scheduledDate
+        )
+    }
+
+    private func parseLabeledSchedule(
+        in text: String,
+        labels: [String],
+        fallbackDate: TravelDocumentParsedDate?,
+        calendar: Calendar
+    ) -> ParsedSchedule? {
+        for line in text.split(whereSeparator: \.isNewline) {
+            guard let value = labeledValue(
+                in: String(line),
+                labels: labels,
+                allowsLabelSuffix: true
+            ) else {
+                continue
+            }
+
+            let date = parseDate(in: value) ?? fallbackDate
+            let time = parseTime(in: value)
+
+            if let schedule = makeSchedule(date: date, time: time, calendar: calendar) {
+                return schedule
+            }
+        }
+
+        return nil
+    }
+
     private func parseSuggestedStopTitle(
         in text: String,
         flightNumber: String?,
@@ -183,28 +251,48 @@ struct TravelDocumentParserService {
         allowsLabelSuffix: Bool = false
     ) -> String? {
         for line in text.split(whereSeparator: \.isNewline) {
-            let trimmedLine = String(line).trimmingCharacters(in: .whitespacesAndNewlines)
-
-            guard let separatorIndex = trimmedLine.firstIndex(where: { $0 == ":" || $0 == "-" }) else {
+            guard let value = labeledValue(
+                in: String(line),
+                labels: labels,
+                allowsLabelSuffix: allowsLabelSuffix
+            ), value.contains(where: \.isLetter) else {
                 continue
             }
 
-            let rawLabel = String(trimmedLine[..<separatorIndex])
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-            let valueStartIndex = trimmedLine.index(after: separatorIndex)
-            let value = String(trimmedLine[valueStartIndex...])
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-
-            if labels.contains(where: { label in
-                rawLabel == label
-                    || (allowsLabelSuffix && rawLabel.hasPrefix("\(label) "))
-            }), value.isEmpty == false {
-                return value
-            }
+            return value
         }
 
         return nil
+    }
+
+    private func labeledValue(
+        in line: String,
+        labels: [String],
+        allowsLabelSuffix: Bool
+    ) -> String? {
+        let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let separatorIndex = trimmedLine.firstIndex(where: { $0 == ":" || $0 == "-" }) else {
+            return nil
+        }
+
+        let rawLabel = String(trimmedLine[..<separatorIndex])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        let matchesLabel = labels.contains { label in
+            rawLabel == label
+                || (allowsLabelSuffix && rawLabel.hasPrefix("\(label) "))
+        }
+
+        guard matchesLabel else {
+            return nil
+        }
+
+        let valueStartIndex = trimmedLine.index(after: separatorIndex)
+        let value = String(trimmedLine[valueStartIndex...])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return value.isEmpty ? nil : value
     }
 
     private func parseFlightNumber(in text: String) -> String? {
@@ -294,4 +382,10 @@ struct TravelDocumentParserService {
 
         return String(token)
     }
+}
+
+private struct ParsedSchedule {
+    let date: TravelDocumentParsedDate
+    let time: TravelDocumentParsedTime
+    let scheduledDate: Date
 }

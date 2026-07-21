@@ -156,7 +156,12 @@ struct TravelDocumentDetailView: View {
                     )
                 }
 
-                if let parsedScheduleText = viewModel.parsedScheduleText() {
+                let departureScheduleText = viewModel.parsedDepartureScheduleText()
+                let arrivalScheduleText = viewModel.parsedArrivalScheduleText()
+
+                if departureScheduleText == nil,
+                   arrivalScheduleText == nil,
+                   let parsedScheduleText = viewModel.parsedScheduleText() {
                     parsedTravelDataRow(
                         title: "Datum und Uhrzeit",
                         value: parsedScheduleText,
@@ -175,11 +180,27 @@ struct TravelDocumentDetailView: View {
                     )
                 }
 
+                if let departureScheduleText {
+                    parsedTravelDataRow(
+                        title: "Abfahrtszeit",
+                        value: departureScheduleText,
+                        systemImage: "clock.arrow.circlepath"
+                    )
+                }
+
                 if let arrivalLocationName {
                     parsedTravelDataRow(
                         title: "Ankunft",
                         value: arrivalLocationName,
                         systemImage: "arrow.down.right.circle"
+                    )
+                }
+
+                if let arrivalScheduleText {
+                    parsedTravelDataRow(
+                        title: "Ankunftszeit",
+                        value: arrivalScheduleText,
+                        systemImage: "clock.badge.checkmark"
                     )
                 }
 

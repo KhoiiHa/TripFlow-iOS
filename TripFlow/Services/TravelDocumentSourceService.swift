@@ -5,6 +5,7 @@
 //  Created by Codex on 21.07.26.
 //
 
+import CryptoKit
 import Foundation
 import UIKit
 
@@ -21,6 +22,7 @@ protocol TravelDocumentSourcePreparing {
     func validateScannedPages(_ pages: [Data]) throws
     func data(from url: URL) throws -> Data
     func pdfData(fromScannedPages pages: [Data]) throws -> Data
+    func fingerprint(for data: Data) -> String
 }
 
 protocol TravelDocumentSourcePreviewing {
@@ -128,6 +130,12 @@ struct TravelDocumentSourceService: TravelDocumentSourcePreparing, TravelDocumen
 
         try validateSourceByteCount(pdfData.count)
         return pdfData
+    }
+
+    func fingerprint(for data: Data) -> String {
+        SHA256.hash(data: data)
+            .map { String(format: "%02x", $0) }
+            .joined()
     }
 
     func temporaryPreviewURL(for data: Data, fileName: String) throws -> URL {

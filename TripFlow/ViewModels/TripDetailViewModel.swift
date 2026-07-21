@@ -55,6 +55,7 @@ final class TripDetailViewModel {
     var documentImportSuccessMessage: String?
     private var pendingDocumentStopSuggestion: TravelDocument?
     private var pendingDocumentSourceData: Data?
+    private var pendingDocumentSourceFingerprint: String?
 
     var canSave: Bool {
         saveDisabledReason == nil
@@ -457,6 +458,7 @@ final class TripDetailViewModel {
         isImportingDocument = false
         pendingDocumentStopSuggestion = nil
         pendingDocumentSourceData = nil
+        pendingDocumentSourceFingerprint = nil
         isShowingCreateDocument = true
     }
 
@@ -472,6 +474,7 @@ final class TripDetailViewModel {
         isImportingDocument = false
         pendingDocumentStopSuggestion = nil
         pendingDocumentSourceData = nil
+        pendingDocumentSourceFingerprint = nil
         isShowingCreateDocument = false
     }
 
@@ -517,6 +520,7 @@ final class TripDetailViewModel {
             newDocumentFileName = "Dokumentenscan.pdf"
             newDocumentExtractedText = recognizedText
             pendingDocumentSourceData = sourceData
+            pendingDocumentSourceFingerprint = travelDocumentSourceService.fingerprint(for: sourceData)
 
             if newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 newDocumentTitle = "Dokumentenscan"
@@ -571,6 +575,7 @@ final class TripDetailViewModel {
             newDocumentFileName = url.lastPathComponent
             newDocumentExtractedText = recognizedText
             pendingDocumentSourceData = sourceData
+            pendingDocumentSourceFingerprint = travelDocumentSourceService.fingerprint(for: sourceData)
 
             if newDocumentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 newDocumentTitle = url.deletingPathExtension().lastPathComponent
@@ -666,6 +671,7 @@ final class TripDetailViewModel {
                 fileName: newDocumentFileName,
                 extractedText: newDocumentExtractedText,
                 sourceData: pendingDocumentSourceData,
+                sourceFingerprint: pendingDocumentSourceFingerprint,
                 for: trip
             )
             modelContext.insert(document)
@@ -680,9 +686,12 @@ final class TripDetailViewModel {
             isShowingDocumentScanner = false
             isImportingDocument = false
             pendingDocumentSourceData = nil
+            pendingDocumentSourceFingerprint = nil
             isShowingCreateDocument = false
         } catch TravelDocumentValidationError.emptyTitle {
             documentErrorMessage = "Bitte gib einen Namen fuer die Reiseunterlage ein."
+        } catch TravelDocumentValidationError.duplicateSource {
+            documentErrorMessage = "Diese Originaldatei ist in diesem Trip bereits gespeichert."
         } catch {
             documentErrorMessage = "Die Reiseunterlage konnte nicht erstellt werden."
         }

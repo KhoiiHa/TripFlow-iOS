@@ -9,6 +9,7 @@ import Foundation
 
 enum TravelDocumentValidationError: Error, Equatable {
     case emptyTitle
+    case duplicateSource
 }
 
 struct TravelDocumentService {
@@ -18,15 +19,27 @@ struct TravelDocumentService {
         fileName: String = "",
         extractedText: String = "",
         sourceData: Data? = nil,
+        sourceFingerprint: String? = nil,
         for trip: Trip
     ) throws -> TravelDocument {
         let values = try validate(title: title, documentType: documentType, fileName: fileName, extractedText: extractedText)
+
+        if let sourceFingerprint,
+           let sourceData,
+           trip.documents.contains(where: { document in
+               document.sourceFingerprint == sourceFingerprint
+                   || (document.sourceFingerprint == nil && document.sourceData == sourceData)
+           }) {
+            throw TravelDocumentValidationError.duplicateSource
+        }
+
         let document = TravelDocument(
             title: values.title,
             documentType: values.documentType,
             fileName: values.fileName,
             extractedText: values.extractedText,
             sourceData: sourceData,
+            sourceFingerprint: sourceFingerprint,
             trip: trip
         )
 

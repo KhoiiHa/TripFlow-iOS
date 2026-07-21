@@ -267,6 +267,56 @@ struct TripFlowTests {
         }
     }
 
+    @Test func createTravelDocumentRejectsDuplicateSourceOnlyInSameTrip() throws {
+        let sourceData = Data("same ticket".utf8)
+        let sourceFingerprint = "same-fingerprint"
+        let berlinTrip = try tripService.createTrip(title: "Berlin")
+        let parisTrip = try tripService.createTrip(title: "Paris")
+        _ = try travelDocumentService.createDocument(
+            title: "Boarding Pass",
+            sourceData: sourceData,
+            sourceFingerprint: sourceFingerprint,
+            for: berlinTrip
+        )
+
+        #expect(throws: TravelDocumentValidationError.duplicateSource) {
+            try travelDocumentService.createDocument(
+                title: "Boarding Pass Kopie",
+                sourceData: sourceData,
+                sourceFingerprint: sourceFingerprint,
+                for: berlinTrip
+            )
+        }
+
+        let documentInOtherTrip = try travelDocumentService.createDocument(
+            title: "Boarding Pass",
+            sourceData: sourceData,
+            sourceFingerprint: sourceFingerprint,
+            for: parisTrip
+        )
+
+        #expect(documentInOtherTrip.trip === parisTrip)
+    }
+
+    @Test func createTravelDocumentRecognizesLegacySourceWithoutFingerprint() throws {
+        let sourceData = Data("legacy ticket".utf8)
+        let trip = try tripService.createTrip(title: "Berlin")
+        _ = try travelDocumentService.createDocument(
+            title: "Altes Ticket",
+            sourceData: sourceData,
+            for: trip
+        )
+
+        #expect(throws: TravelDocumentValidationError.duplicateSource) {
+            try travelDocumentService.createDocument(
+                title: "Neues Ticket",
+                sourceData: sourceData,
+                sourceFingerprint: "new-fingerprint",
+                for: trip
+            )
+        }
+    }
+
     @Test func updateTravelDocumentAppliesValidatedValues() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let document = try travelDocumentService.createDocument(title: "Ticket", for: trip)
@@ -958,6 +1008,18 @@ struct TripFlowTests {
         }
     }
 
+    @Test @MainActor func documentSourceFingerprintIsStableAndContentBased() {
+        let service = TravelDocumentSourceService()
+
+        let firstFingerprint = service.fingerprint(for: Data("ticket".utf8))
+        let repeatedFingerprint = service.fingerprint(for: Data("ticket".utf8))
+        let differentFingerprint = service.fingerprint(for: Data("other ticket".utf8))
+
+        #expect(firstFingerprint.count == 64)
+        #expect(firstFingerprint == repeatedFingerprint)
+        #expect(firstFingerprint != differentFingerprint)
+    }
+
     @Test @MainActor func documentSourceRejectsScanAbovePageAndSizeLimits() {
         let service = TravelDocumentSourceService(
             maximumSourceByteCount: 5,
@@ -1016,6 +1078,7 @@ struct TripFlowTests {
         let documents = try modelContext.fetch(FetchDescriptor<TravelDocument>())
         #expect(documents.count == 1)
         #expect(documents.first?.sourceData == sourceData)
+        #expect(documents.first?.sourceFingerprint == "source-fingerprint")
         #expect(documents.first?.fileName == "boarding-pass.pdf")
     }
 
@@ -1096,6 +1159,41 @@ struct TripFlowTests {
         #expect(viewModel.documentImportSuccessMessage == nil)
         #expect(viewModel.isImportingDocument == false)
         #expect(trip.documents.isEmpty)
+    }
+
+    @Test @MainActor func tripDetailRejectsDuplicateImportedSourceWithoutClosingDraft() async throws {
+        let sourceData = Data("same ticket".utf8)
+        let sourceFingerprint = "same-fingerprint"
+        let trip = try tripService.createTrip(title: "Berlin")
+        _ = try travelDocumentService.createDocument(
+            title: "Boarding Pass",
+            sourceData: sourceData,
+            sourceFingerprint: sourceFingerprint,
+            for: trip
+        )
+        let modelContext = try makeModelContext()
+        let viewModel = TripDetailViewModel(
+            trip: trip,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(
+                recognizedText: "Flug LH 2034 am 05.08.2026 um 09:05"
+            ),
+            travelDocumentSourceService: TravelDocumentSourceServiceStub(
+                sourceData: sourceData,
+                sourceFingerprint: sourceFingerprint
+            )
+        )
+        viewModel.isShowingCreateDocument = true
+
+        await viewModel.importDocumentFile(
+            from: .success([URL(fileURLWithPath: "/tmp/boarding-pass-copy.pdf")])
+        )
+        viewModel.createDocument(for: trip, in: modelContext)
+
+        #expect(trip.documents.count == 1)
+        #expect(viewModel.documentErrorMessage == "Diese Originaldatei ist in diesem Trip bereits gespeichert.")
+        #expect(viewModel.isShowingCreateDocument)
+        #expect(viewModel.newDocumentTitle == "boarding-pass-copy")
+        #expect(viewModel.newDocumentExtractedText.isEmpty == false)
     }
 
     @Test @MainActor func documentOCRReadsEmbeddedTextFromPDF() async throws {
@@ -2144,13 +2242,16 @@ private struct TravelDocumentOCRServiceStub: TravelDocumentTextRecognizing {
 private struct TravelDocumentSourceServiceStub: TravelDocumentSourcePreparing {
     let sourceData: Data
     let validationError: TravelDocumentSourceError?
+    let sourceFingerprint: String
 
     init(
         sourceData: Data = Data("source".utf8),
-        validationError: TravelDocumentSourceError? = nil
+        validationError: TravelDocumentSourceError? = nil,
+        sourceFingerprint: String = "source-fingerprint"
     ) {
         self.sourceData = sourceData
         self.validationError = validationError
+        self.sourceFingerprint = sourceFingerprint
     }
 
     func validateDocument(at url: URL) throws {
@@ -2171,6 +2272,10 @@ private struct TravelDocumentSourceServiceStub: TravelDocumentSourcePreparing {
 
     func pdfData(fromScannedPages pages: [Data]) throws -> Data {
         sourceData
+    }
+
+    func fingerprint(for data: Data) -> String {
+        sourceFingerprint
     }
 }
 

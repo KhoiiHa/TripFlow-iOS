@@ -15,6 +15,7 @@ final class TravelDocument {
     var fileName: String
     var extractedText: String
     @Attribute(.externalStorage) var sourceData: Data?
+    var sourceFingerprint: String?
     var createdAt: Date
     var updatedAt: Date
     var trip: Trip?
@@ -25,6 +26,7 @@ final class TravelDocument {
         fileName: String = "",
         extractedText: String = "",
         sourceData: Data? = nil,
+        sourceFingerprint: String? = nil,
         createdAt: Date = Date(),
         updatedAt: Date = Date(),
         trip: Trip? = nil
@@ -34,6 +36,7 @@ final class TravelDocument {
         self.fileName = fileName
         self.extractedText = extractedText
         self.sourceData = sourceData
+        self.sourceFingerprint = sourceFingerprint
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.trip = trip

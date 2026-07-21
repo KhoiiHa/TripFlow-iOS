@@ -511,6 +511,7 @@ final class TripDetailViewModel {
         defer { isImportingDocument = false }
 
         do {
+            try travelDocumentSourceService.validateScannedPages(pages)
             let recognizedText = try await travelDocumentOCRService.recognizeText(inImageData: pages)
             let sourceData = try travelDocumentSourceService.pdfData(fromScannedPages: pages)
             newDocumentFileName = "Dokumentenscan.pdf"
@@ -530,6 +531,10 @@ final class TripDetailViewModel {
             documentErrorMessage = "Im gescannten Dokument wurde kein Text erkannt."
         } catch TravelDocumentSourceError.unreadableScanPage {
             documentErrorMessage = "Mindestens eine gescannte Seite konnte nicht gespeichert werden."
+        } catch TravelDocumentSourceError.tooManyScanPages(let maximumPageCount) {
+            documentErrorMessage = "Ein Scan darf hoechstens \(maximumPageCount) Seiten enthalten."
+        } catch TravelDocumentSourceError.sourceTooLarge(let maximumByteCount) {
+            documentErrorMessage = "Der Scan darf hoechstens \(Self.megabytes(maximumByteCount)) MB gross sein."
         } catch {
             documentErrorMessage = "Die Texterkennung des Scans ist fehlgeschlagen."
         }
@@ -560,6 +565,7 @@ final class TripDetailViewModel {
         defer { isImportingDocument = false }
 
         do {
+            try travelDocumentSourceService.validateDocument(at: url)
             let recognizedText = try await travelDocumentOCRService.recognizeText(inDocumentAt: url)
             let sourceData = try travelDocumentSourceService.data(from: url)
             newDocumentFileName = url.lastPathComponent
@@ -579,6 +585,8 @@ final class TripDetailViewModel {
             documentErrorMessage = "In der ausgewaehlten Datei wurde kein Text erkannt."
         } catch TravelDocumentSourceError.unreadableFile {
             documentErrorMessage = "Die ausgewaehlte Datei konnte nicht lokal gespeichert werden."
+        } catch TravelDocumentSourceError.sourceTooLarge(let maximumByteCount) {
+            documentErrorMessage = "Die ausgewaehlte Datei darf hoechstens \(Self.megabytes(maximumByteCount)) MB gross sein."
         } catch {
             documentErrorMessage = "Die Texterkennung ist fehlgeschlagen."
         }
@@ -730,6 +738,10 @@ final class TripDetailViewModel {
 
     private static func coordinateText(_ coordinate: Double) -> String {
         String(coordinate)
+    }
+
+    private static func megabytes(_ byteCount: Int) -> Int {
+        max(1, byteCount / 1_024 / 1_024)
     }
 
     private static func textExcerpt(from text: String) -> String {

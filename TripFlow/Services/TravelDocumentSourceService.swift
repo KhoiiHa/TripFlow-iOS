@@ -8,13 +8,17 @@
 import Foundation
 import UIKit
 
-enum TravelDocumentSourceError: Error {
+enum TravelDocumentSourceError: Error, Equatable {
     case unreadableFile
     case unreadableScanPage
     case previewUnavailable
+    case sourceTooLarge(maximumByteCount: Int)
+    case tooManyScanPages(maximumPageCount: Int)
 }
 
 protocol TravelDocumentSourcePreparing {
+    func validateDocument(at url: URL) throws
+    func validateScannedPages(_ pages: [Data]) throws
     func data(from url: URL) throws -> Data
     func pdfData(fromScannedPages pages: [Data]) throws -> Data
 }
@@ -25,6 +29,55 @@ protocol TravelDocumentSourcePreviewing {
 }
 
 struct TravelDocumentSourceService: TravelDocumentSourcePreparing, TravelDocumentSourcePreviewing {
+    static let defaultMaximumSourceByteCount = 25 * 1_024 * 1_024
+    static let defaultMaximumScanPageCount = 20
+
+    private let maximumSourceByteCount: Int
+    private let maximumScanPageCount: Int
+
+    init(
+        maximumSourceByteCount: Int = Self.defaultMaximumSourceByteCount,
+        maximumScanPageCount: Int = Self.defaultMaximumScanPageCount
+    ) {
+        self.maximumSourceByteCount = maximumSourceByteCount
+        self.maximumScanPageCount = maximumScanPageCount
+    }
+
+    func validateDocument(at url: URL) throws {
+        let hasSecurityScopedAccess = url.startAccessingSecurityScopedResource()
+        defer {
+            if hasSecurityScopedAccess {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        guard let fileSize = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize else {
+            return
+        }
+
+        try validateSourceByteCount(fileSize)
+    }
+
+    func validateScannedPages(_ pages: [Data]) throws {
+        guard pages.count <= maximumScanPageCount else {
+            throw TravelDocumentSourceError.tooManyScanPages(
+                maximumPageCount: maximumScanPageCount
+            )
+        }
+
+        var totalByteCount = 0
+
+        for page in pages {
+            guard page.count <= maximumSourceByteCount - totalByteCount else {
+                throw TravelDocumentSourceError.sourceTooLarge(
+                    maximumByteCount: maximumSourceByteCount
+                )
+            }
+
+            totalByteCount += page.count
+        }
+    }
+
     func data(from url: URL) throws -> Data {
         let hasSecurityScopedAccess = url.startAccessingSecurityScopedResource()
         defer {
@@ -33,14 +86,21 @@ struct TravelDocumentSourceService: TravelDocumentSourcePreparing, TravelDocumen
             }
         }
 
+        let sourceData: Data
+
         do {
-            return try Data(contentsOf: url, options: .mappedIfSafe)
+            sourceData = try Data(contentsOf: url, options: .mappedIfSafe)
         } catch {
             throw TravelDocumentSourceError.unreadableFile
         }
+
+        try validateSourceByteCount(sourceData.count)
+        return sourceData
     }
 
     func pdfData(fromScannedPages pages: [Data]) throws -> Data {
+        try validateScannedPages(pages)
+
         let images = try pages.map { pageData in
             guard let image = UIImage(data: pageData),
                   image.size.width > 0,
@@ -59,12 +119,15 @@ struct TravelDocumentSourceService: TravelDocumentSourcePreparing, TravelDocumen
         let contentBounds = pageBounds.insetBy(dx: 24, dy: 24)
         let renderer = UIGraphicsPDFRenderer(bounds: pageBounds)
 
-        return renderer.pdfData { context in
+        let pdfData = renderer.pdfData { context in
             for image in images {
                 context.beginPage()
                 image.draw(in: aspectFitRect(for: image.size, inside: contentBounds))
             }
         }
+
+        try validateSourceByteCount(pdfData.count)
+        return pdfData
     }
 
     func temporaryPreviewURL(for data: Data, fileName: String) throws -> URL {
@@ -94,6 +157,14 @@ struct TravelDocumentSourceService: TravelDocumentSourcePreparing, TravelDocumen
 
     func removeTemporaryPreview(at url: URL) {
         try? FileManager.default.removeItem(at: url)
+    }
+
+    private func validateSourceByteCount(_ byteCount: Int) throws {
+        guard byteCount <= maximumSourceByteCount else {
+            throw TravelDocumentSourceError.sourceTooLarge(
+                maximumByteCount: maximumSourceByteCount
+            )
+        }
     }
 
     private func aspectFitRect(for imageSize: CGSize, inside bounds: CGRect) -> CGRect {

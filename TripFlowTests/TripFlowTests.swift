@@ -946,6 +946,32 @@ struct TripFlowTests {
         #expect(sourceData == expectedData)
     }
 
+    @Test @MainActor func documentSourceRejectsImportedFileAboveSizeLimit() throws {
+        let sourceURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tripflow-large-source-\(UUID().uuidString).pdf")
+        try Data(repeating: 1, count: 5).write(to: sourceURL)
+        defer { try? FileManager.default.removeItem(at: sourceURL) }
+        let service = TravelDocumentSourceService(maximumSourceByteCount: 4)
+
+        #expect(throws: TravelDocumentSourceError.sourceTooLarge(maximumByteCount: 4)) {
+            try service.validateDocument(at: sourceURL)
+        }
+    }
+
+    @Test @MainActor func documentSourceRejectsScanAbovePageAndSizeLimits() {
+        let service = TravelDocumentSourceService(
+            maximumSourceByteCount: 5,
+            maximumScanPageCount: 2
+        )
+
+        #expect(throws: TravelDocumentSourceError.tooManyScanPages(maximumPageCount: 2)) {
+            try service.validateScannedPages([Data([1]), Data([2]), Data([3])])
+        }
+        #expect(throws: TravelDocumentSourceError.sourceTooLarge(maximumByteCount: 5)) {
+            try service.validateScannedPages([Data(repeating: 1, count: 3), Data(repeating: 2, count: 3)])
+        }
+    }
+
     @Test @MainActor func documentSourceCreatesAndRemovesTemporaryPreviewFile() throws {
         let sourceData = Data("preview document".utf8)
         let service = TravelDocumentSourceService()
@@ -1016,6 +1042,60 @@ struct TripFlowTests {
 
         #expect(trip.documents.count == 1)
         #expect(trip.documents.first?.sourceData == nil)
+    }
+
+    @Test @MainActor func tripDetailRejectsOversizedImportWithoutChangingDraft() async throws {
+        let maximumByteCount = TravelDocumentSourceService.defaultMaximumSourceByteCount
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(
+            trip: trip,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(
+                recognizedText: "Neuer erkannter Text"
+            ),
+            travelDocumentSourceService: TravelDocumentSourceServiceStub(
+                validationError: .sourceTooLarge(maximumByteCount: maximumByteCount)
+            )
+        )
+        viewModel.newDocumentTitle = "Bestehender Entwurf"
+        viewModel.newDocumentFileName = "bestehend.pdf"
+        viewModel.newDocumentExtractedText = "Bestehender Text"
+
+        await viewModel.importDocumentFile(
+            from: .success([URL(fileURLWithPath: "/tmp/zu-gross.pdf")])
+        )
+
+        #expect(viewModel.newDocumentTitle == "Bestehender Entwurf")
+        #expect(viewModel.newDocumentFileName == "bestehend.pdf")
+        #expect(viewModel.newDocumentExtractedText == "Bestehender Text")
+        #expect(viewModel.documentErrorMessage == "Die ausgewaehlte Datei darf hoechstens 25 MB gross sein.")
+        #expect(viewModel.documentImportSuccessMessage == nil)
+        #expect(viewModel.isImportingDocument == false)
+        #expect(trip.documents.isEmpty)
+    }
+
+    @Test @MainActor func tripDetailRejectsTooManyScanPagesWithoutChangingDraft() async throws {
+        let maximumPageCount = TravelDocumentSourceService.defaultMaximumScanPageCount
+        let trip = try tripService.createTrip(title: "Berlin")
+        let viewModel = TripDetailViewModel(
+            trip: trip,
+            travelDocumentOCRService: TravelDocumentOCRServiceStub(
+                recognizedText: "Neuer erkannter Text"
+            ),
+            travelDocumentSourceService: TravelDocumentSourceServiceStub(
+                validationError: .tooManyScanPages(maximumPageCount: maximumPageCount)
+            )
+        )
+        viewModel.newDocumentTitle = "Bestehender Entwurf"
+        viewModel.newDocumentExtractedText = "Bestehender Text"
+
+        await viewModel.importScannedDocumentPages([Data([1])])
+
+        #expect(viewModel.newDocumentTitle == "Bestehender Entwurf")
+        #expect(viewModel.newDocumentExtractedText == "Bestehender Text")
+        #expect(viewModel.documentErrorMessage == "Ein Scan darf hoechstens 20 Seiten enthalten.")
+        #expect(viewModel.documentImportSuccessMessage == nil)
+        #expect(viewModel.isImportingDocument == false)
+        #expect(trip.documents.isEmpty)
     }
 
     @Test @MainActor func documentOCRReadsEmbeddedTextFromPDF() async throws {
@@ -2063,9 +2143,26 @@ private struct TravelDocumentOCRServiceStub: TravelDocumentTextRecognizing {
 
 private struct TravelDocumentSourceServiceStub: TravelDocumentSourcePreparing {
     let sourceData: Data
+    let validationError: TravelDocumentSourceError?
 
-    init(sourceData: Data = Data("source".utf8)) {
+    init(
+        sourceData: Data = Data("source".utf8),
+        validationError: TravelDocumentSourceError? = nil
+    ) {
         self.sourceData = sourceData
+        self.validationError = validationError
+    }
+
+    func validateDocument(at url: URL) throws {
+        if let validationError {
+            throw validationError
+        }
+    }
+
+    func validateScannedPages(_ pages: [Data]) throws {
+        if let validationError {
+            throw validationError
+        }
     }
 
     func data(from url: URL) throws -> Data {

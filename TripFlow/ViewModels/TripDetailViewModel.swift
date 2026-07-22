@@ -39,6 +39,7 @@ final class TripDetailViewModel {
     var isResolvingNewStopCoordinates = false
     var isReviewingDocumentStopSuggestion = false
     var stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
+    var stopSuggestionDateFormatIsAmbiguous = false
     var stopSuggestionDocumentType = ""
     var stopSuggestionTextExcerpt = ""
     var stopSuggestionFlightNumber = ""
@@ -345,7 +346,11 @@ final class TripDetailViewModel {
                 TravelDocumentRecognitionSummaryItem(
                     id: "schedule",
                     title: "Zeitpunkt",
-                    value: DateDisplayFormatter.dateTime(scheduledDate, calendar: calendar),
+                    value: Self.recognitionScheduleText(
+                        for: scheduledDate,
+                        calendar: calendar,
+                        dateFormatIsAmbiguous: result.scheduledDateFormatIsAmbiguous
+                    ),
                     systemImage: "calendar"
                 )
             )
@@ -367,7 +372,11 @@ final class TripDetailViewModel {
                 TravelDocumentRecognitionSummaryItem(
                     id: "departureSchedule",
                     title: "Abfahrtszeit",
-                    value: DateDisplayFormatter.dateTime(departureScheduledDate, calendar: calendar),
+                    value: Self.recognitionScheduleText(
+                        for: departureScheduledDate,
+                        calendar: calendar,
+                        dateFormatIsAmbiguous: result.departureDateFormatIsAmbiguous
+                    ),
                     systemImage: "clock.arrow.circlepath"
                 )
             )
@@ -385,14 +394,16 @@ final class TripDetailViewModel {
         }
 
         if let arrivalScheduledDate = result.arrivalScheduledDate {
-            let arrivalScheduleText = DateDisplayFormatter.dateTime(arrivalScheduledDate, calendar: calendar)
             items.append(
                 TravelDocumentRecognitionSummaryItem(
                     id: "arrivalSchedule",
                     title: "Ankunftszeit",
-                    value: result.arrivalDateWasAdjustedToFollowingDay
-                        ? "\(arrivalScheduleText) - Folgetag abgeleitet"
-                        : arrivalScheduleText,
+                    value: Self.recognitionScheduleText(
+                        for: arrivalScheduledDate,
+                        calendar: calendar,
+                        dateFormatIsAmbiguous: result.arrivalDateFormatIsAmbiguous,
+                        wasAdjustedToFollowingDay: result.arrivalDateWasAdjustedToFollowingDay
+                    ),
                     systemImage: "clock.badge.checkmark"
                 )
             )
@@ -455,6 +466,7 @@ final class TripDetailViewModel {
         isResolvingNewStopCoordinates = false
         isReviewingDocumentStopSuggestion = false
         stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
+        stopSuggestionDateFormatIsAmbiguous = false
         stopSuggestionDocumentType = ""
         stopSuggestionTextExcerpt = ""
         stopSuggestionFlightNumber = ""
@@ -470,6 +482,7 @@ final class TripDetailViewModel {
         newStopLocationName = parseResult.suggestedLocationName ?? ""
         isReviewingDocumentStopSuggestion = true
         stopSuggestionArrivalDateWasAdjustedToFollowingDay = parseResult.arrivalDateWasAdjustedToFollowingDay
+        stopSuggestionDateFormatIsAmbiguous = parseResult.scheduledDateFormatIsAmbiguous
         stopSuggestionDocumentType = document.documentType
         stopSuggestionTextExcerpt = Self.textExcerpt(from: document.extractedText)
         stopSuggestionFlightNumber = parseResult.flightNumber ?? ""
@@ -494,6 +507,7 @@ final class TripDetailViewModel {
         isShowingCreateStop = false
         isReviewingDocumentStopSuggestion = false
         stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
+        stopSuggestionDateFormatIsAmbiguous = false
         stopSuggestionDocumentType = ""
         stopSuggestionTextExcerpt = ""
         stopSuggestionFlightNumber = ""
@@ -696,6 +710,7 @@ final class TripDetailViewModel {
             isShowingCreateStop = false
             isReviewingDocumentStopSuggestion = false
             stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
+            stopSuggestionDateFormatIsAmbiguous = false
             stopSuggestionDocumentType = ""
             stopSuggestionTextExcerpt = ""
             stopSuggestionFlightNumber = ""
@@ -803,6 +818,26 @@ final class TripDetailViewModel {
 
     private static func coordinateText(_ coordinate: Double) -> String {
         String(coordinate)
+    }
+
+    private static func recognitionScheduleText(
+        for scheduledDate: Date,
+        calendar: Calendar,
+        dateFormatIsAmbiguous: Bool,
+        wasAdjustedToFollowingDay: Bool = false
+    ) -> String {
+        let value = DateDisplayFormatter.dateTime(scheduledDate, calendar: calendar)
+        var notes: [String] = []
+
+        if wasAdjustedToFollowingDay {
+            notes.append("Folgetag abgeleitet")
+        }
+
+        if dateFormatIsAmbiguous {
+            notes.append("Datumsformat prüfen")
+        }
+
+        return notes.isEmpty ? value : "\(value) - \(notes.joined(separator: ", "))"
     }
 
     private static func megabytes(_ byteCount: Int) -> Int {

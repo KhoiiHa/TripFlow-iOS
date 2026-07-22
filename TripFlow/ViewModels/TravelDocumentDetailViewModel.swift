@@ -27,6 +27,7 @@ final class TravelDocumentDetailViewModel {
     var stopSuggestionLocationName = ""
     var stopSuggestionScheduledDate: Date?
     var stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
+    var stopSuggestionDateFormatIsAmbiguous = false
     var stopSuggestionDocumentType = ""
     var stopSuggestionTextExcerpt = ""
     var stopSuggestionFlightNumber = ""
@@ -343,7 +344,11 @@ final class TravelDocumentDetailViewModel {
                 TravelDocumentRecognitionSummaryItem(
                     id: "schedule",
                     title: "Zeitpunkt",
-                    value: scheduleText(for: scheduledDate, calendar: calendar),
+                    value: recognitionScheduleText(
+                        for: scheduledDate,
+                        calendar: calendar,
+                        dateFormatIsAmbiguous: result.scheduledDateFormatIsAmbiguous
+                    ),
                     systemImage: "calendar"
                 )
             )
@@ -365,7 +370,11 @@ final class TravelDocumentDetailViewModel {
                 TravelDocumentRecognitionSummaryItem(
                     id: "departureSchedule",
                     title: "Abfahrtszeit",
-                    value: scheduleText(for: departureScheduledDate, calendar: calendar),
+                    value: recognitionScheduleText(
+                        for: departureScheduledDate,
+                        calendar: calendar,
+                        dateFormatIsAmbiguous: result.departureDateFormatIsAmbiguous
+                    ),
                     systemImage: "clock.arrow.circlepath"
                 )
             )
@@ -383,14 +392,16 @@ final class TravelDocumentDetailViewModel {
         }
 
         if let arrivalScheduledDate = result.arrivalScheduledDate {
-            let arrivalScheduleText = scheduleText(for: arrivalScheduledDate, calendar: calendar)
             items.append(
                 TravelDocumentRecognitionSummaryItem(
                     id: "arrivalSchedule",
                     title: "Ankunftszeit",
-                    value: result.arrivalDateWasAdjustedToFollowingDay
-                        ? "\(arrivalScheduleText) - Folgetag abgeleitet"
-                        : arrivalScheduleText,
+                    value: recognitionScheduleText(
+                        for: arrivalScheduledDate,
+                        calendar: calendar,
+                        dateFormatIsAmbiguous: result.arrivalDateFormatIsAmbiguous,
+                        wasAdjustedToFollowingDay: result.arrivalDateWasAdjustedToFollowingDay
+                    ),
                     systemImage: "clock.badge.checkmark"
                 )
             )
@@ -462,6 +473,26 @@ final class TravelDocumentDetailViewModel {
         DateDisplayFormatter.dateTime(scheduledDate, calendar: calendar)
     }
 
+    private func recognitionScheduleText(
+        for scheduledDate: Date,
+        calendar: Calendar,
+        dateFormatIsAmbiguous: Bool,
+        wasAdjustedToFollowingDay: Bool = false
+    ) -> String {
+        let value = scheduleText(for: scheduledDate, calendar: calendar)
+        var notes: [String] = []
+
+        if wasAdjustedToFollowingDay {
+            notes.append("Folgetag abgeleitet")
+        }
+
+        if dateFormatIsAmbiguous {
+            notes.append("Datumsformat prüfen")
+        }
+
+        return notes.isEmpty ? value : "\(value) - \(notes.joined(separator: ", "))"
+    }
+
     func parsedSuggestedStopTitle(calendar: Calendar = .current) -> String? {
         parsedTravelDocumentResult(calendar: calendar).suggestedStopTitle
     }
@@ -521,6 +552,7 @@ final class TravelDocumentDetailViewModel {
         stopSuggestionLocationName = result.suggestedLocationName ?? ""
         stopSuggestionScheduledDate = result.scheduledDate
         stopSuggestionArrivalDateWasAdjustedToFollowingDay = result.arrivalDateWasAdjustedToFollowingDay
+        stopSuggestionDateFormatIsAmbiguous = result.scheduledDateFormatIsAmbiguous
         stopSuggestionDocumentType = document.documentType
         stopSuggestionTextExcerpt = Self.textExcerpt(from: document.extractedText)
         stopSuggestionFlightNumber = result.flightNumber ?? ""
@@ -536,6 +568,7 @@ final class TravelDocumentDetailViewModel {
         stopSuggestionLocationName = ""
         stopSuggestionScheduledDate = nil
         stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
+        stopSuggestionDateFormatIsAmbiguous = false
         stopSuggestionDocumentType = ""
         stopSuggestionTextExcerpt = ""
         stopSuggestionFlightNumber = ""
@@ -568,6 +601,7 @@ final class TravelDocumentDetailViewModel {
             stopSuggestionLocationName = ""
             stopSuggestionScheduledDate = nil
             stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
+            stopSuggestionDateFormatIsAmbiguous = false
             stopSuggestionDocumentType = ""
             stopSuggestionTextExcerpt = ""
             stopSuggestionFlightNumber = ""

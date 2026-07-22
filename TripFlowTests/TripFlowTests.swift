@@ -360,6 +360,7 @@ struct TripFlowTests {
 
         #expect(result.date == TravelDocumentParsedDate(day: 5, month: 8, year: 2026))
         #expect(result.time == TravelDocumentParsedTime(hour: 9, minute: 5))
+        #expect(result.scheduledDateFormatIsAmbiguous)
     }
 
     @Test func parserSupportsISODateAndAMPMTime() {
@@ -371,12 +372,22 @@ struct TripFlowTests {
         #expect(result.date == TravelDocumentParsedDate(day: 5, month: 8, year: 2026))
         #expect(result.time == TravelDocumentParsedTime(hour: 21, minute: 5))
         #expect(result.scheduledDate == makeDate(year: 2026, month: 8, day: 5, hour: 21, minute: 5, calendar: testCalendar()))
+        #expect(result.scheduledDateFormatIsAmbiguous == false)
     }
 
     @Test func parserDoesNotChangeEuropeanDateInterpretation() {
         let result = travelDocumentParserService.parse("Boarding 05/08/2026 09:05")
 
         #expect(result.date == TravelDocumentParsedDate(day: 5, month: 8, year: 2026))
+        #expect(result.scheduledDateFormatIsAmbiguous)
+    }
+
+    @Test func parserDoesNotMarkUnambiguousOrDottedDates() {
+        let unambiguousSlashDate = travelDocumentParserService.parse("Boarding 13/08/2026 09:05")
+        let dottedDate = travelDocumentParserService.parse("Boarding 05.08.2026 09:05")
+
+        #expect(unambiguousSlashDate.scheduledDateFormatIsAmbiguous == false)
+        #expect(dottedDate.scheduledDateFormatIsAmbiguous == false)
     }
 
     @Test func parserRejectsInvalidISODateWithoutPartialFallback() {
@@ -585,6 +596,23 @@ struct TripFlowTests {
         #expect(result.departureScheduledDate == nil)
         #expect(result.arrivalScheduledDate == nil)
         #expect(result.scheduledDate == nil)
+    }
+
+    @Test func parserMarksAmbiguousRouteDates() {
+        let result = travelDocumentParserService.parse(
+            """
+            Train 100
+            From: Berlin Hbf
+            Departure: 05/08/2026 08:30
+            To: Hamburg Hbf
+            Arrival: 05/08/2026 10:45
+            """,
+            calendar: testCalendar()
+        )
+
+        #expect(result.departureDateFormatIsAmbiguous)
+        #expect(result.arrivalDateFormatIsAmbiguous)
+        #expect(result.scheduledDateFormatIsAmbiguous)
     }
 
     @Test func parserUsesDocumentDateForLabeledArrivalTime() {
@@ -1568,6 +1596,27 @@ struct TripFlowTests {
         #expect(viewModel.stopSuggestionArrivalDateWasAdjustedToFollowingDay == false)
     }
 
+    @Test func tripDetailMarksAmbiguousDateDuringReview() throws {
+        let trip = try tripService.createTrip(title: "Europa")
+        let document = try travelDocumentService.createDocument(
+            title: "Boarding Pass",
+            extractedText: "Boarding LH 2034 05/08/2026 09:05\nAirport: Berlin BER",
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+        viewModel.newDocumentExtractedText = document.extractedText
+
+        let items = viewModel.newDocumentRecognitionSummaryItems(calendar: testCalendar())
+        viewModel.showCreateStop(from: document, calendar: testCalendar())
+
+        #expect(items.first { $0.id == "schedule" }?.value == "5. August 2026, 09:05 - Datumsformat prüfen")
+        #expect(viewModel.stopSuggestionDateFormatIsAmbiguous)
+
+        viewModel.cancelCreateStop()
+
+        #expect(viewModel.stopSuggestionDateFormatIsAmbiguous == false)
+    }
+
     @Test @MainActor func tripDetailCreatesStopOnlyAfterDraftReviewConfirmation() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let viewModel = TripDetailViewModel(trip: trip)
@@ -2006,7 +2055,7 @@ struct TripFlowTests {
 
         #expect(items.map(\.id) == ["stopTitle", "schedule", "location", "reference"])
         #expect(items.first { $0.id == "stopTitle" }?.value == "Flug LH2034")
-        #expect(items.first { $0.id == "schedule" }?.value == "5. August 2026, 09:05")
+        #expect(items.first { $0.id == "schedule" }?.value == "5. August 2026, 09:05 - Datumsformat prüfen")
         #expect(items.first { $0.id == "location" }?.value == "Gate A12")
         #expect(items.first { $0.id == "reference" }?.value == "Flug LH2034 - Ref XYZ789")
     }
@@ -2082,6 +2131,26 @@ struct TripFlowTests {
         viewModel.cancelStopSuggestionReview()
 
         #expect(viewModel.stopSuggestionArrivalDateWasAdjustedToFollowingDay == false)
+    }
+
+    @Test func documentDetailMarksAmbiguousDateDuringReview() throws {
+        let trip = try tripService.createTrip(title: "Europa")
+        let document = try travelDocumentService.createDocument(
+            title: "Boarding Pass",
+            extractedText: "Boarding LH 2034 05/08/2026 09:05\nAirport: Berlin BER",
+            for: trip
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        let items = viewModel.recognitionSummaryItems(calendar: testCalendar())
+        viewModel.showStopSuggestion(from: document, calendar: testCalendar())
+
+        #expect(items.first { $0.id == "schedule" }?.value == "5. August 2026, 09:05 - Datumsformat prüfen")
+        #expect(viewModel.stopSuggestionDateFormatIsAmbiguous)
+
+        viewModel.cancelStopSuggestionReview()
+
+        #expect(viewModel.stopSuggestionDateFormatIsAmbiguous == false)
     }
 
     @Test func documentDetailParsesTrainNumberMetadata() {

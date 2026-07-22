@@ -396,6 +396,15 @@ struct TravelDocumentDetailView: View {
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                         }
+
+                        if viewModel.stopSuggestionDateFormatIsAmbiguous {
+                            Label(
+                                "Datumsformat ist mehrdeutig. Bitte Tag und Monat vor dem Speichern prüfen.",
+                                systemImage: "calendar.badge.exclamationmark"
+                            )
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        }
                     }
 
                     if viewModel.stopSuggestionLocationName.isEmpty == false {

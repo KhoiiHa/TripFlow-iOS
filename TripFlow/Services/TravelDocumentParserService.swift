@@ -28,6 +28,9 @@ struct TravelDocumentParseResult: Equatable {
     let arrivalLocationName: String?
     let departureScheduledDate: Date?
     let arrivalScheduledDate: Date?
+    let scheduledDateFormatIsAmbiguous: Bool
+    let departureDateFormatIsAmbiguous: Bool
+    let arrivalDateFormatIsAmbiguous: Bool
     let arrivalDateWasAdjustedToFollowingDay: Bool
     let flightNumber: String?
     let trainNumber: String?
@@ -36,12 +39,14 @@ struct TravelDocumentParseResult: Equatable {
 
 struct TravelDocumentParserService {
     func parse(_ text: String, calendar: Calendar = .current) -> TravelDocumentParseResult {
-        let fallbackDate = parseDate(in: text, calendar: calendar)
+        let fallbackDateValue = parseDate(in: text, calendar: calendar)
+        let fallbackDate = fallbackDateValue?.date
         let fallbackTime = parseTime(in: text)
         let fallbackSchedule = makeSchedule(
             date: fallbackDate,
             time: fallbackTime,
-            calendar: calendar
+            calendar: calendar,
+            dateFormatIsAmbiguous: fallbackDateValue?.formatIsAmbiguous ?? false
         )
         let departureLocationName = parseLocationName(
             in: text,
@@ -61,7 +66,7 @@ struct TravelDocumentParserService {
         let departureScheduleResult = parseLabeledSchedule(
             in: text,
             labels: ["abfahrt", "departure", "abflug", "depart"],
-            fallbackDate: fallbackDate,
+            fallbackDate: fallbackDateValue,
             calendar: calendar
         )
         let departureSchedule: ParsedSchedule?
@@ -78,7 +83,7 @@ struct TravelDocumentParserService {
         let arrivalScheduleResult = parseLabeledSchedule(
             in: text,
             labels: ["ankunft", "arrival", "landung", "arrive"],
-            fallbackDate: fallbackDate,
+            fallbackDate: fallbackDateValue,
             calendar: calendar
         )
         let arrivalSchedule = adjustedArrivalSchedule(
@@ -109,6 +114,9 @@ struct TravelDocumentParserService {
             arrivalLocationName: arrivalLocationName,
             departureScheduledDate: departureSchedule?.scheduledDate,
             arrivalScheduledDate: arrivalSchedule?.scheduledDate,
+            scheduledDateFormatIsAmbiguous: suggestedSchedule?.dateFormatIsAmbiguous ?? false,
+            departureDateFormatIsAmbiguous: departureSchedule?.dateFormatIsAmbiguous ?? false,
+            arrivalDateFormatIsAmbiguous: arrivalSchedule?.dateFormatIsAmbiguous ?? false,
             arrivalDateWasAdjustedToFollowingDay: arrivalSchedule?.wasAdjustedToFollowingDay ?? false,
             flightNumber: flightNumber,
             trainNumber: trainNumber,
@@ -116,7 +124,7 @@ struct TravelDocumentParserService {
         )
     }
 
-    private func parseDate(in text: String, calendar: Calendar) -> TravelDocumentParsedDate? {
+    private func parseDate(in text: String, calendar: Calendar) -> ParsedDateValue? {
         let isoRegex = #/(?:^|[^\d])(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})(?:[^\d]|$)/#
 
         if let match = text.firstMatch(of: isoRegex) {
@@ -126,10 +134,14 @@ struct TravelDocumentParserService {
                 return nil
             }
 
-            return validatedDate(day: day, month: month, year: year, calendar: calendar)
+            guard let date = validatedDate(day: day, month: month, year: year, calendar: calendar) else {
+                return nil
+            }
+
+            return ParsedDateValue(date: date, formatIsAmbiguous: false)
         }
 
-        let regex = #/(?:^|[^\d])(?<day>\d{1,2})[./-](?<month>\d{1,2})[./-](?<year>\d{4}|\d{2})(?:[^\d]|$)/#
+        let regex = #/(?:^|[^\d])(?<day>\d{1,2})(?<firstSeparator>[./-])(?<month>\d{1,2})(?<secondSeparator>[./-])(?<year>\d{4}|\d{2})(?:[^\d]|$)/#
 
         guard let match = text.firstMatch(of: regex),
               let day = Int(match.day),
@@ -140,7 +152,16 @@ struct TravelDocumentParserService {
 
         let year = rawYear < 100 ? 2000 + rawYear : rawYear
 
-        return validatedDate(day: day, month: month, year: year, calendar: calendar)
+        guard let date = validatedDate(day: day, month: month, year: year, calendar: calendar) else {
+            return nil
+        }
+
+        let formatIsAmbiguous = match.firstSeparator == "/"
+            && match.secondSeparator == "/"
+            && day <= 12
+            && month <= 12
+
+        return ParsedDateValue(date: date, formatIsAmbiguous: formatIsAmbiguous)
     }
 
     private func validatedDate(
@@ -239,7 +260,8 @@ struct TravelDocumentParserService {
         date: TravelDocumentParsedDate?,
         time: TravelDocumentParsedTime?,
         calendar: Calendar,
-        dateWasInferred: Bool = false
+        dateWasInferred: Bool = false,
+        dateFormatIsAmbiguous: Bool = false
     ) -> ParsedSchedule? {
         guard let date,
               let time,
@@ -252,6 +274,7 @@ struct TravelDocumentParserService {
             time: time,
             scheduledDate: scheduledDate,
             dateWasInferred: dateWasInferred,
+            dateFormatIsAmbiguous: dateFormatIsAmbiguous,
             wasAdjustedToFollowingDay: false
         )
     }
@@ -259,7 +282,7 @@ struct TravelDocumentParserService {
     private func parseLabeledSchedule(
         in text: String,
         labels: [String],
-        fallbackDate: TravelDocumentParsedDate?,
+        fallbackDate: ParsedDateValue?,
         calendar: Calendar
     ) -> LabeledScheduleParseResult {
         var foundInvalidValue = false
@@ -280,14 +303,15 @@ struct TravelDocumentParserService {
                 continue
             }
 
-            let date = parsedDate ?? fallbackDate
+            let dateValue = parsedDate ?? fallbackDate
             let time = parseTime(in: value)
 
             if let schedule = makeSchedule(
-                date: date,
+                date: dateValue?.date,
                 time: time,
                 calendar: calendar,
-                dateWasInferred: parsedDate == nil
+                dateWasInferred: parsedDate == nil,
+                dateFormatIsAmbiguous: dateValue?.formatIsAmbiguous ?? false
             ) {
                 return .schedule(schedule)
             }
@@ -324,6 +348,7 @@ struct TravelDocumentParserService {
             time: arrivalSchedule.time,
             scheduledDate: nextDay,
             dateWasInferred: true,
+            dateFormatIsAmbiguous: arrivalSchedule.dateFormatIsAmbiguous,
             wasAdjustedToFollowingDay: true
         )
     }
@@ -520,7 +545,13 @@ private struct ParsedSchedule {
     let time: TravelDocumentParsedTime
     let scheduledDate: Date
     let dateWasInferred: Bool
+    let dateFormatIsAmbiguous: Bool
     let wasAdjustedToFollowingDay: Bool
+}
+
+private struct ParsedDateValue {
+    let date: TravelDocumentParsedDate
+    let formatIsAmbiguous: Bool
 }
 
 private enum LabeledScheduleParseResult {

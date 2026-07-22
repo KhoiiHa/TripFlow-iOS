@@ -27,8 +27,8 @@ enum DemoDataSeeder {
 
             let trip = Trip(
                 title: "Berlin Sommertrip",
-                startDate: date(year: 2026, month: 7, day: 15, hour: 9, minute: 0),
-                endDate: date(year: 2026, month: 7, day: 18, hour: 18, minute: 0)
+                startDate: date(year: 2026, month: 7, day: 8, hour: 7, minute: 0),
+                endDate: date(year: 2026, month: 8, day: 8, hour: 18, minute: 0)
             )
 
             let hotelStop = Stop(
@@ -52,13 +52,16 @@ enum DemoDataSeeder {
             )
 
             let document = TravelDocument(
-                title: "Hotelbuchung",
-                documentType: "Hotel",
-                fileName: "hotel.pdf",
+                title: "ICE 100 Berlin-Prag",
+                documentType: "Bahn",
+                fileName: "ice100.pdf",
                 extractedText: """
-                Hotel Check-in 15.07.2026 ab 14:30 Uhr
-                Adresse: Alexanderplatz 1, Berlin
-                Reservierung: H12345
+                Bahn ICE 100
+                Von: Berlin Hbf
+                Abfahrt: 07/08/2026 08:30
+                Nach: Prag Hauptbahnhof
+                Ankunft: 07/08/2026 10:45
+                Reservierung: ICE7PRAG
                 """,
                 trip: trip
             )

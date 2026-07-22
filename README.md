@@ -8,15 +8,19 @@ Der Fokus liegt auf einem klaren Portfolio-Use-Case: Reiseunterlagen koennen ges
 
 ![TripFlow Demo](screenshots/tripflow-demo.gif)
 
-Der kurze Ablauf zeigt Trip-Status, Tagesplanung mit Karte und den Review-Schritt fuer erkannte Reisedaten aus einer Reiseunterlage.
+Der reproduzierbare Ablauf zeigt Trip-Status, Tagesplanung mit Karte, erkannte OCR-Daten, die explizite Datumsentscheidung im Review und den erst danach gespeicherten Stop.
 
 ## Screenshots
 
-| Trip-Uebersicht | Trip-Detail | Stop-Review |
-| --- | --- | --- |
-| ![Trip-Uebersicht](screenshots/01-trip-list.png) | ![Trip-Detail](screenshots/02-trip-detail.png) | ![Stop-Review](screenshots/03-stop-review.png) |
+| Trip-Uebersicht | Trip-Detail |
+| --- | --- |
+| ![Trip-Uebersicht](screenshots/01-trip-list.png) | ![Trip-Detail](screenshots/02-trip-detail.png) |
+| Erkannte Dokumentdaten | Stop-Review |
+| ![Erkannte Dokumentdaten](screenshots/03-document-review.png) | ![Stop-Review](screenshots/04-stop-review.png) |
 
-Die Screenshots zeigen den aktuellen 0.2-Kern: Trip-Status auf einen Blick, Timeline mit Kartenbezug und die ausdrueckliche Review-Entscheidung vor dem Speichern eines erkannten Stops.
+![Bestaetigter Stop in der Timeline](screenshots/05-stop-saved.png)
+
+Die Screenshots zeigen den aktuellen 0.2-Kern: Die Demo-Unterlage enthaelt einen repraesentativen lokalen OCR-Text. TripFlow trennt Abfahrt und Ankunft, markiert das mehrdeutige Datum `07/08/2026`, bietet eine bewusste Korrektur an und speichert den vorgeschlagenen Stop erst nach der Bestaetigung.
 
 ## Technische Highlights
 
@@ -100,6 +104,7 @@ Die Tests decken zentrale MVP-Logik ab:
 - Bild-, PDF- und Scanner-Import ohne vorzeitige Speicherung
 - OCR-/Dokumentparser fuer Datum, Uhrzeit, Ort und Referenzen
 - Document-to-Stop-Review, zweistufige Bestaetigung und Validierung
+- Mehrdeutige Datumswerte, AM-/PM-Zeiten und ueber Mitternacht abgeleitete Ankunftstage
 
 Ausfuehren:
 
@@ -112,6 +117,8 @@ Portfolio-Screenshots neu erzeugen:
 ```sh
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test -project TripFlow.xcodeproj -scheme TripFlow -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:TripFlowUITests/TripFlowUITests/testCapturePortfolioScreenshots
 ```
+
+Der UI-Test startet mit `-tripflowDemoData`, ersetzt vorhandene lokale Testdaten und schreibt die PNG-Dateien standardmaessig nach `/tmp/tripflow-screenshots-new`. Ein anderes Ziel kann im UI-Test-Scheme ueber `TRIPFLOW_SCREENSHOT_DIR` gesetzt werden.
 
 ## MVP-Grenzen
 

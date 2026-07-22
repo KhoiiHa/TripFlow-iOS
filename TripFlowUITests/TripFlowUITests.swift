@@ -62,13 +62,15 @@ final class TripFlowUITests: XCTestCase {
         Thread.sleep(forTimeInterval: 1.0)
         try saveScreenshot(named: "02-trip-detail", in: screenshotDirectory)
 
-        let documentTitle = app.staticTexts["Hotelbuchung"]
+        let documentTitle = app.staticTexts["ICE 100 Berlin-Prag"]
         scrollUntilVisible(documentTitle, in: app)
         XCTAssertTrue(documentTitle.waitForExistence(timeout: 4))
         documentTitle.tap()
 
         let reviewTitle = app.staticTexts["Review"]
         XCTAssertTrue(reviewTitle.waitForExistence(timeout: 8))
+        Thread.sleep(forTimeInterval: 1.0)
+        try saveScreenshot(named: "03-document-review", in: screenshotDirectory)
 
         let createStopSuggestion = app.buttons["Stop daraus erstellen"]
         scrollUntilVisible(createStopSuggestion, in: app)
@@ -78,8 +80,27 @@ final class TripFlowUITests: XCTestCase {
         let stopReviewTitle = app.navigationBars["Neuer Stop"]
         XCTAssertTrue(stopReviewTitle.waitForExistence(timeout: 8))
         XCTAssertTrue(app.staticTexts["Vor dem Speichern bearbeiten"].exists)
+        let swapDayAndMonth = app.buttons["Tag und Monat tauschen"]
+        XCTAssertTrue(swapDayAndMonth.waitForExistence(timeout: 4))
         Thread.sleep(forTimeInterval: 1.0)
-        try saveScreenshot(named: "03-stop-review", in: screenshotDirectory)
+        try saveScreenshot(named: "04-stop-review", in: screenshotDirectory)
+
+        swapDayAndMonth.tap()
+
+        XCTAssertTrue(swapDayAndMonth.waitForNonExistence(timeout: 4))
+
+        app.buttons["Erstellen"].tap()
+
+        let savedStop = app.staticTexts["Bahnfahrt ICE100"]
+        let backButton = app.navigationBars["ICE 100 Berlin-Prag"].buttons.element(boundBy: 0)
+        XCTAssertTrue(backButton.waitForExistence(timeout: 4))
+        backButton.tap()
+
+        scrollDownUntilHittable(savedStop, in: app)
+        XCTAssertTrue(savedStop.waitForExistence(timeout: 4))
+        XCTAssertTrue(savedStop.isHittable)
+        Thread.sleep(forTimeInterval: 1.0)
+        try saveScreenshot(named: "05-stop-saved", in: screenshotDirectory)
     }
 
     private func scrollUntilVisible(_ element: XCUIElement, in app: XCUIApplication, maxAttempts: Int = 6) {
@@ -87,6 +108,19 @@ final class TripFlowUITests: XCTestCase {
 
         while element.exists == false && attempts < maxAttempts {
             app.swipeUp()
+            attempts += 1
+        }
+    }
+
+    private func scrollDownUntilHittable(
+        _ element: XCUIElement,
+        in app: XCUIApplication,
+        maxAttempts: Int = 8
+    ) {
+        var attempts = 0
+
+        while element.isHittable == false && attempts < maxAttempts {
+            app.swipeDown()
             attempts += 1
         }
     }

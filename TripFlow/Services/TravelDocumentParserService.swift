@@ -127,6 +127,21 @@ struct TravelDocumentParserService {
     }
 
     private func parseTime(in text: String) -> TravelDocumentParsedTime? {
+        let normalizedText = text.uppercased()
+        let twelveHourRegex = #/(?:^|[^\d./-])(?<hour>\d{1,2})[:.](?<minute>\d{2})[ \t]*(?<meridiem>AM|PM)\b/#
+
+        if let match = normalizedText.firstMatch(of: twelveHourRegex) {
+            guard let hour = Int(match.hour),
+                  let minute = Int(match.minute),
+                  (1...12).contains(hour),
+                  (0...59).contains(minute) else {
+                return nil
+            }
+
+            let normalizedHour = hour % 12 + (match.meridiem == "PM" ? 12 : 0)
+            return TravelDocumentParsedTime(hour: normalizedHour, minute: minute)
+        }
+
         let regex = #/(?:^|[^\d./-])(?<hour>\d{1,2})[:.](?<minute>\d{2})(?:[^\d./-]|$)/#
 
         guard let match = text.firstMatch(of: regex),

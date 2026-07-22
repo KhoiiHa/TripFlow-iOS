@@ -362,6 +362,30 @@ struct TripFlowTests {
         #expect(result.time == TravelDocumentParsedTime(hour: 9, minute: 5))
     }
 
+    @Test func parserConvertsAMAndPMTimes() {
+        let morning = travelDocumentParserService.parse("Boarding 05/08/26 9:05 AM")
+        let evening = travelDocumentParserService.parse("Boarding 05/08/26 9.05pm")
+
+        #expect(morning.time == TravelDocumentParsedTime(hour: 9, minute: 5))
+        #expect(evening.time == TravelDocumentParsedTime(hour: 21, minute: 5))
+    }
+
+    @Test func parserConvertsTwelveHourClockBoundaries() {
+        let midnight = travelDocumentParserService.parse("Arrival 05/08/26 12:00 AM")
+        let noon = travelDocumentParserService.parse("Departure 05/08/26 12:00 PM")
+
+        #expect(midnight.time == TravelDocumentParsedTime(hour: 0, minute: 0))
+        #expect(noon.time == TravelDocumentParsedTime(hour: 12, minute: 0))
+    }
+
+    @Test func parserRejectsInvalidAMAndPMHours() {
+        let zeroHour = travelDocumentParserService.parse("Boarding 05/08/26 00:30 AM")
+        let thirteenHour = travelDocumentParserService.parse("Boarding 05/08/26 13:30 PM")
+
+        #expect(zeroHour.time == nil)
+        #expect(thirteenHour.time == nil)
+    }
+
     @Test func parserIgnoresInvalidDateAndTimeValues() {
         let result = travelDocumentParserService.parse("Termin 40.15.2026 25:90")
 
@@ -525,6 +549,23 @@ struct TripFlowTests {
         #expect(result.arrivalScheduledDate == makeDate(year: 2027, month: 1, day: 1, hour: 0, minute: 45, calendar: testCalendar()))
         #expect(result.scheduledDate == result.arrivalScheduledDate)
         #expect(result.date == TravelDocumentParsedDate(day: 1, month: 1, year: 2027))
+        #expect(result.arrivalDateWasAdjustedToFollowingDay)
+    }
+
+    @Test func parserMovesAMAndPMArrivalToFollowingDay() {
+        let result = travelDocumentParserService.parse(
+            """
+            Train 100 on 31/12/2026
+            From: New York Penn
+            Departure: 11:30 PM
+            To: Boston South Station
+            Arrival: 12:45 AM
+            """,
+            calendar: testCalendar()
+        )
+
+        #expect(result.departureScheduledDate == makeDate(year: 2026, month: 12, day: 31, hour: 23, minute: 30, calendar: testCalendar()))
+        #expect(result.arrivalScheduledDate == makeDate(year: 2027, month: 1, day: 1, hour: 0, minute: 45, calendar: testCalendar()))
         #expect(result.arrivalDateWasAdjustedToFollowingDay)
     }
 

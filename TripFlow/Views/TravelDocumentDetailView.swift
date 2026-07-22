@@ -387,6 +387,15 @@ struct TravelDocumentDetailView: View {
                             value: DateDisplayFormatter.time(scheduledDate),
                             systemImage: "clock"
                         )
+
+                        if viewModel.stopSuggestionArrivalDateWasAdjustedToFollowingDay {
+                            Label(
+                                "Ankunftsdatum wurde als Folgetag abgeleitet. Bitte vor dem Speichern prüfen.",
+                                systemImage: "calendar.badge.exclamationmark"
+                            )
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        }
                     }
 
                     if viewModel.stopSuggestionLocationName.isEmpty == false {

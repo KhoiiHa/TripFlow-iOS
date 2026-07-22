@@ -38,6 +38,7 @@ final class TripDetailViewModel {
     var stopSuccessMessage: String?
     var isResolvingNewStopCoordinates = false
     var isReviewingDocumentStopSuggestion = false
+    var stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
     var stopSuggestionDocumentType = ""
     var stopSuggestionTextExcerpt = ""
     var stopSuggestionFlightNumber = ""
@@ -384,11 +385,14 @@ final class TripDetailViewModel {
         }
 
         if let arrivalScheduledDate = result.arrivalScheduledDate {
+            let arrivalScheduleText = DateDisplayFormatter.dateTime(arrivalScheduledDate, calendar: calendar)
             items.append(
                 TravelDocumentRecognitionSummaryItem(
                     id: "arrivalSchedule",
                     title: "Ankunftszeit",
-                    value: DateDisplayFormatter.dateTime(arrivalScheduledDate, calendar: calendar),
+                    value: result.arrivalDateWasAdjustedToFollowingDay
+                        ? "\(arrivalScheduleText) - Folgetag abgeleitet"
+                        : arrivalScheduleText,
                     systemImage: "clock.badge.checkmark"
                 )
             )
@@ -450,6 +454,7 @@ final class TripDetailViewModel {
         stopSuccessMessage = nil
         isResolvingNewStopCoordinates = false
         isReviewingDocumentStopSuggestion = false
+        stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
         stopSuggestionDocumentType = ""
         stopSuggestionTextExcerpt = ""
         stopSuggestionFlightNumber = ""
@@ -464,6 +469,7 @@ final class TripDetailViewModel {
         newStopTitle = parseResult.suggestedStopTitle ?? document.title
         newStopLocationName = parseResult.suggestedLocationName ?? ""
         isReviewingDocumentStopSuggestion = true
+        stopSuggestionArrivalDateWasAdjustedToFollowingDay = parseResult.arrivalDateWasAdjustedToFollowingDay
         stopSuggestionDocumentType = document.documentType
         stopSuggestionTextExcerpt = Self.textExcerpt(from: document.extractedText)
         stopSuggestionFlightNumber = parseResult.flightNumber ?? ""
@@ -487,6 +493,7 @@ final class TripDetailViewModel {
         isResolvingNewStopCoordinates = false
         isShowingCreateStop = false
         isReviewingDocumentStopSuggestion = false
+        stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
         stopSuggestionDocumentType = ""
         stopSuggestionTextExcerpt = ""
         stopSuggestionFlightNumber = ""
@@ -688,6 +695,7 @@ final class TripDetailViewModel {
                 : "Stop \"\(stop.title)\" wurde erstellt."
             isShowingCreateStop = false
             isReviewingDocumentStopSuggestion = false
+            stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
             stopSuggestionDocumentType = ""
             stopSuggestionTextExcerpt = ""
             stopSuggestionFlightNumber = ""

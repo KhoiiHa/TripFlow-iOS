@@ -26,6 +26,7 @@ final class TravelDocumentDetailViewModel {
     var stopSuggestionTitle = ""
     var stopSuggestionLocationName = ""
     var stopSuggestionScheduledDate: Date?
+    var stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
     var stopSuggestionDocumentType = ""
     var stopSuggestionTextExcerpt = ""
     var stopSuggestionFlightNumber = ""
@@ -382,11 +383,14 @@ final class TravelDocumentDetailViewModel {
         }
 
         if let arrivalScheduledDate = result.arrivalScheduledDate {
+            let arrivalScheduleText = scheduleText(for: arrivalScheduledDate, calendar: calendar)
             items.append(
                 TravelDocumentRecognitionSummaryItem(
                     id: "arrivalSchedule",
                     title: "Ankunftszeit",
-                    value: scheduleText(for: arrivalScheduledDate, calendar: calendar),
+                    value: result.arrivalDateWasAdjustedToFollowingDay
+                        ? "\(arrivalScheduleText) - Folgetag abgeleitet"
+                        : arrivalScheduleText,
                     systemImage: "clock.badge.checkmark"
                 )
             )
@@ -516,6 +520,7 @@ final class TravelDocumentDetailViewModel {
         stopSuggestionTitle = result.suggestedStopTitle ?? title
         stopSuggestionLocationName = result.suggestedLocationName ?? ""
         stopSuggestionScheduledDate = result.scheduledDate
+        stopSuggestionArrivalDateWasAdjustedToFollowingDay = result.arrivalDateWasAdjustedToFollowingDay
         stopSuggestionDocumentType = document.documentType
         stopSuggestionTextExcerpt = Self.textExcerpt(from: document.extractedText)
         stopSuggestionFlightNumber = result.flightNumber ?? ""
@@ -530,6 +535,7 @@ final class TravelDocumentDetailViewModel {
         stopSuggestionTitle = ""
         stopSuggestionLocationName = ""
         stopSuggestionScheduledDate = nil
+        stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
         stopSuggestionDocumentType = ""
         stopSuggestionTextExcerpt = ""
         stopSuggestionFlightNumber = ""
@@ -561,6 +567,7 @@ final class TravelDocumentDetailViewModel {
             stopSuggestionTitle = ""
             stopSuggestionLocationName = ""
             stopSuggestionScheduledDate = nil
+            stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
             stopSuggestionDocumentType = ""
             stopSuggestionTextExcerpt = ""
             stopSuggestionFlightNumber = ""

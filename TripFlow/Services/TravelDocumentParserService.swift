@@ -28,6 +28,7 @@ struct TravelDocumentParseResult: Equatable {
     let arrivalLocationName: String?
     let departureScheduledDate: Date?
     let arrivalScheduledDate: Date?
+    let arrivalDateWasAdjustedToFollowingDay: Bool
     let flightNumber: String?
     let trainNumber: String?
     let reservationNumber: String?
@@ -99,6 +100,7 @@ struct TravelDocumentParserService {
             arrivalLocationName: arrivalLocationName,
             departureScheduledDate: departureSchedule?.scheduledDate,
             arrivalScheduledDate: arrivalSchedule?.scheduledDate,
+            arrivalDateWasAdjustedToFollowingDay: arrivalSchedule?.wasAdjustedToFollowingDay ?? false,
             flightNumber: flightNumber,
             trainNumber: trainNumber,
             reservationNumber: reservationNumber
@@ -174,7 +176,8 @@ struct TravelDocumentParserService {
             date: date,
             time: time,
             scheduledDate: scheduledDate,
-            dateWasInferred: dateWasInferred
+            dateWasInferred: dateWasInferred,
+            wasAdjustedToFollowingDay: false
         )
     }
 
@@ -235,7 +238,8 @@ struct TravelDocumentParserService {
             date: TravelDocumentParsedDate(day: day, month: month, year: year),
             time: arrivalSchedule.time,
             scheduledDate: nextDay,
-            dateWasInferred: true
+            dateWasInferred: true,
+            wasAdjustedToFollowingDay: true
         )
     }
 
@@ -431,4 +435,5 @@ private struct ParsedSchedule {
     let time: TravelDocumentParsedTime
     let scheduledDate: Date
     let dateWasInferred: Bool
+    let wasAdjustedToFollowingDay: Bool
 }

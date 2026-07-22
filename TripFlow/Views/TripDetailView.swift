@@ -505,6 +505,15 @@ struct TripDetailView: View {
                         if let scheduledDate = viewModel.newStopScheduledDate {
                             LabeledContent("Datum", value: DateDisplayFormatter.date(scheduledDate))
                             LabeledContent("Uhrzeit", value: DateDisplayFormatter.time(scheduledDate))
+
+                            if viewModel.stopSuggestionArrivalDateWasAdjustedToFollowingDay {
+                                Label(
+                                    "Ankunftsdatum wurde als Folgetag abgeleitet. Bitte vor dem Speichern prüfen.",
+                                    systemImage: "calendar.badge.exclamationmark"
+                                )
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                            }
                         }
 
                         if viewModel.newStopLocationName.isEmpty == false {

@@ -525,6 +525,7 @@ struct TripFlowTests {
         #expect(result.arrivalScheduledDate == makeDate(year: 2027, month: 1, day: 1, hour: 0, minute: 45, calendar: testCalendar()))
         #expect(result.scheduledDate == result.arrivalScheduledDate)
         #expect(result.date == TravelDocumentParsedDate(day: 1, month: 1, year: 2027))
+        #expect(result.arrivalDateWasAdjustedToFollowingDay)
     }
 
     @Test func parserKeepsExplicitArrivalDateUnchanged() {
@@ -542,6 +543,7 @@ struct TripFlowTests {
         #expect(result.departureScheduledDate == makeDate(year: 2026, month: 8, day: 5, hour: 9, minute: 5, calendar: testCalendar()))
         #expect(result.arrivalScheduledDate == makeDate(year: 2026, month: 8, day: 5, hour: 8, minute: 40, calendar: testCalendar()))
         #expect(result.date == TravelDocumentParsedDate(day: 5, month: 8, year: 2026))
+        #expect(result.arrivalDateWasAdjustedToFollowingDay == false)
     }
 
     @Test func tripDetailSortsDocumentsNewestFirst() throws {
@@ -1410,6 +1412,33 @@ struct TripFlowTests {
         #expect(viewModel.canReviewNewDocumentStopSuggestion)
     }
 
+    @Test func tripDetailMarksInferredFollowingDayDuringReview() throws {
+        let trip = try tripService.createTrip(title: "Silvester")
+        let document = try travelDocumentService.createDocument(
+            title: "Nachtreise",
+            extractedText: """
+            Bahn ICE 100 am 31.12.2026
+            Von: Berlin Hbf
+            Abfahrt: 23:30
+            Nach: Hamburg Hbf
+            Ankunft: 00:45
+            """,
+            for: trip
+        )
+        let viewModel = TripDetailViewModel(trip: trip)
+        viewModel.newDocumentExtractedText = document.extractedText
+
+        let items = viewModel.newDocumentRecognitionSummaryItems(calendar: testCalendar())
+        viewModel.showCreateStop(from: document, calendar: testCalendar())
+
+        #expect(items.first { $0.id == "arrivalSchedule" }?.value == "1. Januar 2027, 00:45 - Folgetag abgeleitet")
+        #expect(viewModel.stopSuggestionArrivalDateWasAdjustedToFollowingDay)
+
+        viewModel.cancelCreateStop()
+
+        #expect(viewModel.stopSuggestionArrivalDateWasAdjustedToFollowingDay == false)
+    }
+
     @Test @MainActor func tripDetailCreatesStopOnlyAfterDraftReviewConfirmation() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let viewModel = TripDetailViewModel(trip: trip)
@@ -1898,6 +1927,32 @@ struct TripFlowTests {
             viewModel.stopSuggestionUnavailableMessage(for: document, calendar: testCalendar())
                 == "Kein Stop-Vorschlag: Fuer das erkannte Ziel fehlt noch eine Ankunftszeit."
         )
+    }
+
+    @Test func documentDetailMarksInferredFollowingDayDuringReview() throws {
+        let trip = try tripService.createTrip(title: "Silvester")
+        let document = try travelDocumentService.createDocument(
+            title: "Nachtreise",
+            extractedText: """
+            Bahn ICE 100 am 31.12.2026
+            Von: Berlin Hbf
+            Abfahrt: 23:30
+            Nach: Hamburg Hbf
+            Ankunft: 00:45
+            """,
+            for: trip
+        )
+        let viewModel = TravelDocumentDetailViewModel(document: document)
+
+        let items = viewModel.recognitionSummaryItems(calendar: testCalendar())
+        viewModel.showStopSuggestion(from: document, calendar: testCalendar())
+
+        #expect(items.first { $0.id == "arrivalSchedule" }?.value == "1. Januar 2027, 00:45 - Folgetag abgeleitet")
+        #expect(viewModel.stopSuggestionArrivalDateWasAdjustedToFollowingDay)
+
+        viewModel.cancelStopSuggestionReview()
+
+        #expect(viewModel.stopSuggestionArrivalDateWasAdjustedToFollowingDay == false)
     }
 
     @Test func documentDetailParsesTrainNumberMetadata() {

@@ -509,6 +509,41 @@ struct TripFlowTests {
         #expect(result.scheduledDate == result.arrivalScheduledDate)
     }
 
+    @Test func parserMovesTimeOnlyArrivalToFollowingDay() {
+        let result = travelDocumentParserService.parse(
+            """
+            Bahn ICE 100 am 31.12.2026
+            Von: Berlin Hbf
+            Abfahrt: 23:30
+            Nach: Hamburg Hbf
+            Ankunft: 00:45
+            """,
+            calendar: testCalendar()
+        )
+
+        #expect(result.departureScheduledDate == makeDate(year: 2026, month: 12, day: 31, hour: 23, minute: 30, calendar: testCalendar()))
+        #expect(result.arrivalScheduledDate == makeDate(year: 2027, month: 1, day: 1, hour: 0, minute: 45, calendar: testCalendar()))
+        #expect(result.scheduledDate == result.arrivalScheduledDate)
+        #expect(result.date == TravelDocumentParsedDate(day: 1, month: 1, year: 2027))
+    }
+
+    @Test func parserKeepsExplicitArrivalDateUnchanged() {
+        let result = travelDocumentParserService.parse(
+            """
+            Flug LH 2034 am 05.08.2026
+            From: Berlin BER
+            Departure: 05.08.2026 09:05
+            To: Lisbon LIS
+            Arrival: 05.08.2026 08:40
+            """,
+            calendar: testCalendar()
+        )
+
+        #expect(result.departureScheduledDate == makeDate(year: 2026, month: 8, day: 5, hour: 9, minute: 5, calendar: testCalendar()))
+        #expect(result.arrivalScheduledDate == makeDate(year: 2026, month: 8, day: 5, hour: 8, minute: 40, calendar: testCalendar()))
+        #expect(result.date == TravelDocumentParsedDate(day: 5, month: 8, year: 2026))
+    }
+
     @Test func tripDetailSortsDocumentsNewestFirst() throws {
         let trip = try tripService.createTrip(title: "Berlin")
         let olderDocument = TravelDocument(

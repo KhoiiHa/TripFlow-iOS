@@ -65,10 +65,15 @@ struct TravelDocumentParserService {
         )
         let departureSchedule = parsedDepartureSchedule
             ?? (departureLocationName == nil ? nil : fallbackSchedule)
-        let arrivalSchedule = parseLabeledSchedule(
+        let parsedArrivalSchedule = parseLabeledSchedule(
             in: text,
             labels: ["ankunft", "arrival", "landung", "arrive"],
             fallbackDate: fallbackDate,
+            calendar: calendar
+        )
+        let arrivalSchedule = adjustedArrivalSchedule(
+            parsedArrivalSchedule,
+            after: departureSchedule,
             calendar: calendar
         )
         let hasCompleteRoute = departureLocationName != nil && arrivalLocationName != nil
@@ -156,7 +161,8 @@ struct TravelDocumentParserService {
     private func makeSchedule(
         date: TravelDocumentParsedDate?,
         time: TravelDocumentParsedTime?,
-        calendar: Calendar
+        calendar: Calendar,
+        dateWasInferred: Bool = false
     ) -> ParsedSchedule? {
         guard let date,
               let time,
@@ -167,7 +173,8 @@ struct TravelDocumentParserService {
         return ParsedSchedule(
             date: date,
             time: time,
-            scheduledDate: scheduledDate
+            scheduledDate: scheduledDate,
+            dateWasInferred: dateWasInferred
         )
     }
 
@@ -186,15 +193,50 @@ struct TravelDocumentParserService {
                 continue
             }
 
-            let date = parseDate(in: value) ?? fallbackDate
+            let parsedDate = parseDate(in: value)
+            let date = parsedDate ?? fallbackDate
             let time = parseTime(in: value)
 
-            if let schedule = makeSchedule(date: date, time: time, calendar: calendar) {
+            if let schedule = makeSchedule(
+                date: date,
+                time: time,
+                calendar: calendar,
+                dateWasInferred: parsedDate == nil
+            ) {
                 return schedule
             }
         }
 
         return nil
+    }
+
+    private func adjustedArrivalSchedule(
+        _ arrivalSchedule: ParsedSchedule?,
+        after departureSchedule: ParsedSchedule?,
+        calendar: Calendar
+    ) -> ParsedSchedule? {
+        guard let arrivalSchedule,
+              arrivalSchedule.dateWasInferred,
+              let departureSchedule,
+              arrivalSchedule.scheduledDate <= departureSchedule.scheduledDate,
+              let nextDay = calendar.date(byAdding: .day, value: 1, to: arrivalSchedule.scheduledDate) else {
+            return arrivalSchedule
+        }
+
+        let components = calendar.dateComponents([.day, .month, .year], from: nextDay)
+
+        guard let day = components.day,
+              let month = components.month,
+              let year = components.year else {
+            return arrivalSchedule
+        }
+
+        return ParsedSchedule(
+            date: TravelDocumentParsedDate(day: day, month: month, year: year),
+            time: arrivalSchedule.time,
+            scheduledDate: nextDay,
+            dateWasInferred: true
+        )
     }
 
     private func parseSuggestedStopTitle(
@@ -388,4 +430,5 @@ private struct ParsedSchedule {
     let date: TravelDocumentParsedDate
     let time: TravelDocumentParsedTime
     let scheduledDate: Date
+    let dateWasInferred: Bool
 }

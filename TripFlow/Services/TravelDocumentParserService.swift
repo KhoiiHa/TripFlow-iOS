@@ -108,7 +108,21 @@ struct TravelDocumentParserService {
     }
 
     private func parseDate(in text: String) -> TravelDocumentParsedDate? {
-        let regex = #/(?<day>\d{1,2})[./-](?<month>\d{1,2})[./-](?<year>\d{4}|\d{2})/#
+        let isoRegex = #/(?:^|[^\d])(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})(?:[^\d]|$)/#
+
+        if let match = text.firstMatch(of: isoRegex) {
+            guard let day = Int(match.day),
+                  let month = Int(match.month),
+                  let year = Int(match.year),
+                  (1...31).contains(day),
+                  (1...12).contains(month) else {
+                return nil
+            }
+
+            return TravelDocumentParsedDate(day: day, month: month, year: year)
+        }
+
+        let regex = #/(?:^|[^\d])(?<day>\d{1,2})[./-](?<month>\d{1,2})[./-](?<year>\d{4}|\d{2})(?:[^\d]|$)/#
 
         guard let match = text.firstMatch(of: regex),
               let day = Int(match.day),

@@ -362,6 +362,30 @@ struct TripFlowTests {
         #expect(result.time == TravelDocumentParsedTime(hour: 9, minute: 5))
     }
 
+    @Test func parserSupportsISODateAndAMPMTime() {
+        let result = travelDocumentParserService.parse(
+            "Boarding 2026-08-05 9:05 PM",
+            calendar: testCalendar()
+        )
+
+        #expect(result.date == TravelDocumentParsedDate(day: 5, month: 8, year: 2026))
+        #expect(result.time == TravelDocumentParsedTime(hour: 21, minute: 5))
+        #expect(result.scheduledDate == makeDate(year: 2026, month: 8, day: 5, hour: 21, minute: 5, calendar: testCalendar()))
+    }
+
+    @Test func parserDoesNotChangeEuropeanDateInterpretation() {
+        let result = travelDocumentParserService.parse("Boarding 05/08/2026 09:05")
+
+        #expect(result.date == TravelDocumentParsedDate(day: 5, month: 8, year: 2026))
+    }
+
+    @Test func parserRejectsInvalidISODateWithoutPartialFallback() {
+        let result = travelDocumentParserService.parse("Boarding 2026-12-32 09:05")
+
+        #expect(result.date == nil)
+        #expect(result.scheduledDate == nil)
+    }
+
     @Test func parserConvertsAMAndPMTimes() {
         let morning = travelDocumentParserService.parse("Boarding 05/08/26 9:05 AM")
         let evening = travelDocumentParserService.parse("Boarding 05/08/26 9.05pm")
@@ -567,6 +591,23 @@ struct TripFlowTests {
         #expect(result.departureScheduledDate == makeDate(year: 2026, month: 12, day: 31, hour: 23, minute: 30, calendar: testCalendar()))
         #expect(result.arrivalScheduledDate == makeDate(year: 2027, month: 1, day: 1, hour: 0, minute: 45, calendar: testCalendar()))
         #expect(result.arrivalDateWasAdjustedToFollowingDay)
+    }
+
+    @Test func parserKeepsExplicitISOArrivalDateUnchanged() {
+        let result = travelDocumentParserService.parse(
+            """
+            Train 100
+            From: New York Penn
+            Departure: 2026-12-31 11:30 PM
+            To: Boston South Station
+            Arrival: 2027-01-01 12:45 AM
+            """,
+            calendar: testCalendar()
+        )
+
+        #expect(result.departureScheduledDate == makeDate(year: 2026, month: 12, day: 31, hour: 23, minute: 30, calendar: testCalendar()))
+        #expect(result.arrivalScheduledDate == makeDate(year: 2027, month: 1, day: 1, hour: 0, minute: 45, calendar: testCalendar()))
+        #expect(result.arrivalDateWasAdjustedToFollowingDay == false)
     }
 
     @Test func parserKeepsExplicitArrivalDateUnchanged() {

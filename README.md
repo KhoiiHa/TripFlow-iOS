@@ -49,6 +49,8 @@ TripFlow ist aktuell auf Version 0.2 erweitert. Der Stand zeigt den Kernnutzen d
 
 Der aktuelle 0.2-Stand und der markierte MVP-Stand sind im [Changelog](CHANGELOG.md) dokumentiert.
 
+Der vollstaendige 0.2-Stand ist als GitHub Release [`v0.2.1`](https://github.com/KhoiiHa/TripFlow-iOS/releases/tag/v0.2.1) veroeffentlicht.
+
 Der stabile MVP-Snapshot ist als Git-Tag [`v0.1.0-mvp`](https://github.com/KhoiiHa/TripFlow-iOS/tree/v0.1.0-mvp) markiert.
 
 Eine kurze Einordnung der Produkt- und Architekturentscheidungen steht in der [Case Study](CASE_STUDY.md).

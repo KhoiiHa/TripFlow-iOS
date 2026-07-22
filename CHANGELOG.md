@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.2.1 - 2026-07-22
+
+TripFlow schliesst den Dokumentflow von Version 0.2 mit lokaler Originaldatei und robusterem Reisezeit-Parsing ab.
+
+### Verbessert
+
+- Importierte Originalunterlagen lokal speichern, in Quick Look oeffnen, teilen und kontrolliert ersetzen
+- Dateigroesse, Scan-Seitenzahl und doppelte Originalunterlagen vor der Speicherung pruefen
+- Abfahrt und Ankunft mit eigenen Datums- und Uhrzeitwerten erkennen
+- AM-/PM-Zeiten, Ankuenfte nach Mitternacht, ISO-Daten und ungueltige Kalenderdaten behandeln
+- Mehrdeutige Datumswerte im Review markieren und Tag sowie Monat erst nach Nutzerentscheidung tauschen
+- Reproduzierbaren Portfolio-Flow von erkannten Dokumentdaten bis zum bestaetigten Timeline-Stop zeigen
+
+### Weiterhin bewusst nicht enthalten
+
+- Automatische Stop-Speicherung ohne Nutzerbestaetigung
+- Cloud-OCR oder Upload externer Reisedokumente
+- Account-, Sync- oder Booking-Funktionen
+
 ## v0.2.0 - 2026-07-21
 
 TripFlow verarbeitet Reiseunterlagen jetzt als durchgaengigen, lokal-first Workflow.

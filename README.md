@@ -57,6 +57,8 @@ Eine kurze Einordnung der Produkt- und Architekturentscheidungen steht in der [C
 
 Fertige Kurztexte fuer GitHub, LinkedIn und Bewerbung stehen im [Portfolio Pitch](PORTFOLIO_PITCH.md).
 
+Der aktuelle Stand fuer Signierung, App Store Connect und den ersten Geraetetest steht in der [TestFlight-Checkliste](TESTFLIGHT_CHECKLIST.md).
+
 Weitere Ideen wie Widgets, App Intents oder breiteres Smart Parsing gehoeren in spaetere, getrennte Iterationen.
 
 ## MVP-Funktionen

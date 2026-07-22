@@ -43,6 +43,14 @@ struct TripListView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Trips")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Link(destination: privacyPolicyURL) {
+                        Label("Datenschutz", systemImage: "hand.raised")
+                    }
+                    .labelStyle(.iconOnly)
+                    .help("Datenschutz")
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         viewModel.showCreateTrip()
@@ -55,6 +63,10 @@ struct TripListView: View {
                 createTripSheet
             }
         }
+    }
+
+    private var privacyPolicyURL: URL {
+        URL(string: "https://github.com/KhoiiHa/TripFlow-iOS/blob/main/PRIVACY.md")!
     }
 
     private var emptyTripsView: some View {

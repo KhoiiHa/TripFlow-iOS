@@ -386,6 +386,36 @@ struct TripFlowTests {
         #expect(result.scheduledDate == nil)
     }
 
+    @Test func parserRejectsImpossibleCalendarDates() {
+        let europeanDate = travelDocumentParserService.parse(
+            "Boarding 31.02.2026 09:05",
+            calendar: testCalendar()
+        )
+        let isoDate = travelDocumentParserService.parse(
+            "Boarding 2026-02-29 09:05",
+            calendar: testCalendar()
+        )
+
+        #expect(europeanDate.date == nil)
+        #expect(europeanDate.scheduledDate == nil)
+        #expect(isoDate.date == nil)
+        #expect(isoDate.scheduledDate == nil)
+    }
+
+    @Test func parserAcceptsLeapDayInSupportedFormats() {
+        let europeanDate = travelDocumentParserService.parse(
+            "Boarding 29.02.2028 09:05",
+            calendar: testCalendar()
+        )
+        let isoDate = travelDocumentParserService.parse(
+            "Boarding 2028-02-29 09:05",
+            calendar: testCalendar()
+        )
+
+        #expect(europeanDate.date == TravelDocumentParsedDate(day: 29, month: 2, year: 2028))
+        #expect(isoDate.date == TravelDocumentParsedDate(day: 29, month: 2, year: 2028))
+    }
+
     @Test func parserConvertsAMAndPMTimes() {
         let morning = travelDocumentParserService.parse("Boarding 05/08/26 9:05 AM")
         let evening = travelDocumentParserService.parse("Boarding 05/08/26 9.05pm")
@@ -538,6 +568,23 @@ struct TripFlowTests {
         #expect(result.scheduledDate == arrival)
         #expect(result.date == TravelDocumentParsedDate(day: 15, month: 7, year: 2026))
         #expect(result.time == TravelDocumentParsedTime(hour: 10, minute: 45))
+    }
+
+    @Test func parserDoesNotFallbackFromInvalidLabeledDates() {
+        let result = travelDocumentParserService.parse(
+            """
+            Bahn ICE 100 am 15.02.2026 08:30
+            Von: Berlin Hbf
+            Abfahrt: 31.02.2026 09:00
+            Nach: Hamburg Hbf
+            Ankunft: 30.02.2026 10:00
+            """,
+            calendar: testCalendar()
+        )
+
+        #expect(result.departureScheduledDate == nil)
+        #expect(result.arrivalScheduledDate == nil)
+        #expect(result.scheduledDate == nil)
     }
 
     @Test func parserUsesDocumentDateForLabeledArrivalTime() {

@@ -36,7 +36,7 @@ struct TravelDocumentParseResult: Equatable {
 
 struct TravelDocumentParserService {
     func parse(_ text: String, calendar: Calendar = .current) -> TravelDocumentParseResult {
-        let fallbackDate = parseDate(in: text)
+        let fallbackDate = parseDate(in: text, calendar: calendar)
         let fallbackTime = parseTime(in: text)
         let fallbackSchedule = makeSchedule(
             date: fallbackDate,
@@ -58,22 +58,31 @@ struct TravelDocumentParserService {
         let suggestedLocationName = arrivalLocationName
             ?? genericLocationName
             ?? departureLocationName
-        let parsedDepartureSchedule = parseLabeledSchedule(
+        let departureScheduleResult = parseLabeledSchedule(
             in: text,
             labels: ["abfahrt", "departure", "abflug", "depart"],
             fallbackDate: fallbackDate,
             calendar: calendar
         )
-        let departureSchedule = parsedDepartureSchedule
-            ?? (departureLocationName == nil ? nil : fallbackSchedule)
-        let parsedArrivalSchedule = parseLabeledSchedule(
+        let departureSchedule: ParsedSchedule?
+
+        switch departureScheduleResult {
+        case .schedule(let schedule):
+            departureSchedule = schedule
+        case .absent:
+            departureSchedule = departureLocationName == nil ? nil : fallbackSchedule
+        case .invalid:
+            departureSchedule = nil
+        }
+
+        let arrivalScheduleResult = parseLabeledSchedule(
             in: text,
             labels: ["ankunft", "arrival", "landung", "arrive"],
             fallbackDate: fallbackDate,
             calendar: calendar
         )
         let arrivalSchedule = adjustedArrivalSchedule(
-            parsedArrivalSchedule,
+            arrivalScheduleResult.parsedSchedule,
             after: departureSchedule,
             calendar: calendar
         )
@@ -107,19 +116,17 @@ struct TravelDocumentParserService {
         )
     }
 
-    private func parseDate(in text: String) -> TravelDocumentParsedDate? {
+    private func parseDate(in text: String, calendar: Calendar) -> TravelDocumentParsedDate? {
         let isoRegex = #/(?:^|[^\d])(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})(?:[^\d]|$)/#
 
         if let match = text.firstMatch(of: isoRegex) {
             guard let day = Int(match.day),
                   let month = Int(match.month),
-                  let year = Int(match.year),
-                  (1...31).contains(day),
-                  (1...12).contains(month) else {
+                  let year = Int(match.year) else {
                 return nil
             }
 
-            return TravelDocumentParsedDate(day: day, month: month, year: year)
+            return validatedDate(day: day, month: month, year: year, calendar: calendar)
         }
 
         let regex = #/(?:^|[^\d])(?<day>\d{1,2})[./-](?<month>\d{1,2})[./-](?<year>\d{4}|\d{2})(?:[^\d]|$)/#
@@ -133,11 +140,50 @@ struct TravelDocumentParserService {
 
         let year = rawYear < 100 ? 2000 + rawYear : rawYear
 
+        return validatedDate(day: day, month: month, year: year, calendar: calendar)
+    }
+
+    private func validatedDate(
+        day: Int,
+        month: Int,
+        year: Int,
+        calendar: Calendar
+    ) -> TravelDocumentParsedDate? {
         guard (1...31).contains(day), (1...12).contains(month) else {
             return nil
         }
 
-        return TravelDocumentParsedDate(day: day, month: month, year: year)
+        let parsedDate = TravelDocumentParsedDate(day: day, month: month, year: year)
+        let components = DateComponents(
+            calendar: calendar,
+            timeZone: calendar.timeZone,
+            year: year,
+            month: month,
+            day: day,
+            hour: 12
+        )
+
+        guard let date = components.date else {
+            return nil
+        }
+
+        let validatedComponents = calendar.dateComponents([.day, .month, .year], from: date)
+
+        guard validatedComponents.day == day,
+              validatedComponents.month == month,
+              validatedComponents.year == year else {
+            return nil
+        }
+
+        return parsedDate
+    }
+
+    private func containsDateCandidate(in text: String) -> Bool {
+        let isoRegex = #/(?:^|[^\d])\d{4}-\d{2}-\d{2}(?:[^\d]|$)/#
+        let dayFirstRegex = #/(?:^|[^\d])\d{1,2}[./-]\d{1,2}[./-](?:\d{4}|\d{2})(?:[^\d]|$)/#
+
+        return text.firstMatch(of: isoRegex) != nil
+            || text.firstMatch(of: dayFirstRegex) != nil
     }
 
     private func parseTime(in text: String) -> TravelDocumentParsedTime? {
@@ -215,7 +261,9 @@ struct TravelDocumentParserService {
         labels: [String],
         fallbackDate: TravelDocumentParsedDate?,
         calendar: Calendar
-    ) -> ParsedSchedule? {
+    ) -> LabeledScheduleParseResult {
+        var foundInvalidValue = false
+
         for line in text.split(whereSeparator: \.isNewline) {
             guard let value = labeledValue(
                 in: String(line),
@@ -225,7 +273,13 @@ struct TravelDocumentParserService {
                 continue
             }
 
-            let parsedDate = parseDate(in: value)
+            let parsedDate = parseDate(in: value, calendar: calendar)
+
+            if parsedDate == nil, containsDateCandidate(in: value) {
+                foundInvalidValue = true
+                continue
+            }
+
             let date = parsedDate ?? fallbackDate
             let time = parseTime(in: value)
 
@@ -235,11 +289,13 @@ struct TravelDocumentParserService {
                 calendar: calendar,
                 dateWasInferred: parsedDate == nil
             ) {
-                return schedule
+                return .schedule(schedule)
             }
+
+            foundInvalidValue = true
         }
 
-        return nil
+        return foundInvalidValue ? .invalid : .absent
     }
 
     private func adjustedArrivalSchedule(
@@ -465,4 +521,18 @@ private struct ParsedSchedule {
     let scheduledDate: Date
     let dateWasInferred: Bool
     let wasAdjustedToFollowingDay: Bool
+}
+
+private enum LabeledScheduleParseResult {
+    case absent
+    case invalid
+    case schedule(ParsedSchedule)
+
+    var parsedSchedule: ParsedSchedule? {
+        guard case .schedule(let schedule) = self else {
+            return nil
+        }
+
+        return schedule
+    }
 }

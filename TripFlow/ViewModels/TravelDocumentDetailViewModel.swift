@@ -92,6 +92,7 @@ final class TravelDocumentDetailViewModel {
     private let travelDocumentService: TravelDocumentService
     private let travelDocumentParserService: TravelDocumentParserService
     private let stopService: StopService
+    private var stopSuggestionScheduledDateBySwappingDayAndMonth: Date?
     private let travelDocumentSourcePreviewService: any TravelDocumentSourcePreviewing
     private let travelDocumentOCRService: any TravelDocumentTextRecognizing
     private let travelDocumentSourceService: any TravelDocumentSourcePreparing
@@ -551,6 +552,7 @@ final class TravelDocumentDetailViewModel {
         stopSuggestionTitle = result.suggestedStopTitle ?? title
         stopSuggestionLocationName = result.suggestedLocationName ?? ""
         stopSuggestionScheduledDate = result.scheduledDate
+        stopSuggestionScheduledDateBySwappingDayAndMonth = result.scheduledDateBySwappingDayAndMonth
         stopSuggestionArrivalDateWasAdjustedToFollowingDay = result.arrivalDateWasAdjustedToFollowingDay
         stopSuggestionDateFormatIsAmbiguous = result.scheduledDateFormatIsAmbiguous
         stopSuggestionDocumentType = document.documentType
@@ -563,10 +565,34 @@ final class TravelDocumentDetailViewModel {
         isShowingStopSuggestion = true
     }
 
+    var canSwapAmbiguousStopSuggestionDayAndMonth: Bool {
+        stopSuggestionDateFormatIsAmbiguous
+            && stopSuggestionScheduledDateBySwappingDayAndMonth != nil
+    }
+
+    func swapAmbiguousStopSuggestionDayAndMonth() {
+        guard canSwapAmbiguousStopSuggestionDayAndMonth,
+              let swappedDate = stopSuggestionScheduledDateBySwappingDayAndMonth else {
+            return
+        }
+
+        stopSuggestionScheduledDate = swappedDate
+        stopSuggestionScheduledDateBySwappingDayAndMonth = nil
+        stopSuggestionDateFormatIsAmbiguous = false
+    }
+
+    func updateStopSuggestionScheduledDate(_ scheduledDate: Date) {
+        stopSuggestionScheduledDate = scheduledDate
+        stopSuggestionScheduledDateBySwappingDayAndMonth = nil
+        stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
+        stopSuggestionDateFormatIsAmbiguous = false
+    }
+
     func cancelStopSuggestionReview() {
         stopSuggestionTitle = ""
         stopSuggestionLocationName = ""
         stopSuggestionScheduledDate = nil
+        stopSuggestionScheduledDateBySwappingDayAndMonth = nil
         stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
         stopSuggestionDateFormatIsAmbiguous = false
         stopSuggestionDocumentType = ""
@@ -600,6 +626,7 @@ final class TravelDocumentDetailViewModel {
             stopSuggestionTitle = ""
             stopSuggestionLocationName = ""
             stopSuggestionScheduledDate = nil
+            stopSuggestionScheduledDateBySwappingDayAndMonth = nil
             stopSuggestionArrivalDateWasAdjustedToFollowingDay = false
             stopSuggestionDateFormatIsAmbiguous = false
             stopSuggestionDocumentType = ""

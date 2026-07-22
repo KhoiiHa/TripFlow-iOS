@@ -380,14 +380,18 @@ struct TripFlowTests {
 
         #expect(result.date == TravelDocumentParsedDate(day: 5, month: 8, year: 2026))
         #expect(result.scheduledDateFormatIsAmbiguous)
+        #expect(result.scheduledDateBySwappingDayAndMonth != nil)
     }
 
     @Test func parserDoesNotMarkUnambiguousOrDottedDates() {
         let unambiguousSlashDate = travelDocumentParserService.parse("Boarding 13/08/2026 09:05")
         let dottedDate = travelDocumentParserService.parse("Boarding 05.08.2026 09:05")
+        let equalDayAndMonth = travelDocumentParserService.parse("Boarding 05/05/2026 09:05")
 
         #expect(unambiguousSlashDate.scheduledDateFormatIsAmbiguous == false)
         #expect(dottedDate.scheduledDateFormatIsAmbiguous == false)
+        #expect(equalDayAndMonth.scheduledDateFormatIsAmbiguous == false)
+        #expect(equalDayAndMonth.scheduledDateBySwappingDayAndMonth == nil)
     }
 
     @Test func parserRejectsInvalidISODateWithoutPartialFallback() {
@@ -666,6 +670,24 @@ struct TripFlowTests {
         #expect(result.departureScheduledDate == makeDate(year: 2026, month: 12, day: 31, hour: 23, minute: 30, calendar: testCalendar()))
         #expect(result.arrivalScheduledDate == makeDate(year: 2027, month: 1, day: 1, hour: 0, minute: 45, calendar: testCalendar()))
         #expect(result.arrivalDateWasAdjustedToFollowingDay)
+    }
+
+    @Test func parserSwapsAmbiguousDateBeforeFollowingDayAdjustment() {
+        let result = travelDocumentParserService.parse(
+            """
+            Train 100 on 05/08/2026
+            From: New York Penn
+            Departure: 11:30 PM
+            To: Boston South Station
+            Arrival: 12:45 AM
+            """,
+            calendar: testCalendar()
+        )
+
+        #expect(result.scheduledDate == makeDate(year: 2026, month: 8, day: 6, hour: 0, minute: 45, calendar: testCalendar()))
+        #expect(result.scheduledDateBySwappingDayAndMonth == makeDate(year: 2026, month: 5, day: 9, hour: 0, minute: 45, calendar: testCalendar()))
+        #expect(result.arrivalDateWasAdjustedToFollowingDay)
+        #expect(result.scheduledDateFormatIsAmbiguous)
     }
 
     @Test func parserKeepsExplicitISOArrivalDateUnchanged() {
@@ -1611,6 +1633,13 @@ struct TripFlowTests {
 
         #expect(items.first { $0.id == "schedule" }?.value == "5. August 2026, 09:05 - Datumsformat prüfen")
         #expect(viewModel.stopSuggestionDateFormatIsAmbiguous)
+        #expect(viewModel.canSwapAmbiguousStopSuggestionDayAndMonth)
+
+        viewModel.swapAmbiguousStopSuggestionDayAndMonth()
+
+        #expect(viewModel.newStopScheduledDate == makeDate(year: 2026, month: 5, day: 8, hour: 9, minute: 5, calendar: testCalendar()))
+        #expect(viewModel.stopSuggestionDateFormatIsAmbiguous == false)
+        #expect(viewModel.canSwapAmbiguousStopSuggestionDayAndMonth == false)
 
         viewModel.cancelCreateStop()
 
@@ -2128,6 +2157,12 @@ struct TripFlowTests {
         #expect(items.first { $0.id == "arrivalSchedule" }?.value == "1. Januar 2027, 00:45 - Folgetag abgeleitet")
         #expect(viewModel.stopSuggestionArrivalDateWasAdjustedToFollowingDay)
 
+        viewModel.updateStopSuggestionScheduledDate(
+            makeDate(year: 2027, month: 1, day: 1, hour: 1, minute: 0, calendar: testCalendar())
+        )
+
+        #expect(viewModel.stopSuggestionArrivalDateWasAdjustedToFollowingDay == false)
+
         viewModel.cancelStopSuggestionReview()
 
         #expect(viewModel.stopSuggestionArrivalDateWasAdjustedToFollowingDay == false)
@@ -2147,6 +2182,13 @@ struct TripFlowTests {
 
         #expect(items.first { $0.id == "schedule" }?.value == "5. August 2026, 09:05 - Datumsformat prüfen")
         #expect(viewModel.stopSuggestionDateFormatIsAmbiguous)
+        #expect(viewModel.canSwapAmbiguousStopSuggestionDayAndMonth)
+
+        viewModel.swapAmbiguousStopSuggestionDayAndMonth()
+
+        #expect(viewModel.stopSuggestionScheduledDate == makeDate(year: 2026, month: 5, day: 8, hour: 9, minute: 5, calendar: testCalendar()))
+        #expect(viewModel.stopSuggestionDateFormatIsAmbiguous == false)
+        #expect(viewModel.canSwapAmbiguousStopSuggestionDayAndMonth == false)
 
         viewModel.cancelStopSuggestionReview()
 

@@ -404,6 +404,14 @@ struct TravelDocumentDetailView: View {
                             )
                             .font(.footnote)
                             .foregroundStyle(.secondary)
+
+                            if viewModel.canSwapAmbiguousStopSuggestionDayAndMonth {
+                                Button {
+                                    viewModel.swapAmbiguousStopSuggestionDayAndMonth()
+                                } label: {
+                                    Label("Tag und Monat tauschen", systemImage: "arrow.left.arrow.right")
+                                }
+                            }
                         }
                     }
 
@@ -609,7 +617,7 @@ struct TravelDocumentDetailView: View {
         Binding {
             viewModel.stopSuggestionScheduledDate ?? Date()
         } set: { newValue in
-            viewModel.stopSuggestionScheduledDate = newValue
+            viewModel.updateStopSuggestionScheduledDate(newValue)
         }
     }
 }

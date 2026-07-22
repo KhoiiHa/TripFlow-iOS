@@ -22,6 +22,7 @@ struct TravelDocumentParseResult: Equatable {
     let date: TravelDocumentParsedDate?
     let time: TravelDocumentParsedTime?
     let scheduledDate: Date?
+    let scheduledDateBySwappingDayAndMonth: Date?
     let suggestedStopTitle: String?
     let suggestedLocationName: String?
     let departureLocationName: String?
@@ -108,6 +109,7 @@ struct TravelDocumentParserService {
             date: suggestedSchedule?.date ?? fallbackDate,
             time: suggestedSchedule?.time ?? fallbackTime,
             scheduledDate: suggestedSchedule?.scheduledDate,
+            scheduledDateBySwappingDayAndMonth: suggestedSchedule?.dateBySwappingDayAndMonth,
             suggestedStopTitle: suggestedStopTitle,
             suggestedLocationName: suggestedLocationName,
             departureLocationName: departureLocationName,
@@ -160,6 +162,7 @@ struct TravelDocumentParserService {
             && match.secondSeparator == "/"
             && day <= 12
             && month <= 12
+            && day != month
 
         return ParsedDateValue(date: date, formatIsAmbiguous: formatIsAmbiguous)
     }
@@ -269,10 +272,28 @@ struct TravelDocumentParserService {
             return nil
         }
 
+        let dateBySwappingDayAndMonth: Date?
+
+        if dateFormatIsAmbiguous {
+            let swappedDate = TravelDocumentParsedDate(
+                day: date.month,
+                month: date.day,
+                year: date.year
+            )
+            dateBySwappingDayAndMonth = makeDate(
+                from: swappedDate,
+                time: time,
+                calendar: calendar
+            )
+        } else {
+            dateBySwappingDayAndMonth = nil
+        }
+
         return ParsedSchedule(
             date: date,
             time: time,
             scheduledDate: scheduledDate,
+            dateBySwappingDayAndMonth: dateBySwappingDayAndMonth,
             dateWasInferred: dateWasInferred,
             dateFormatIsAmbiguous: dateFormatIsAmbiguous,
             wasAdjustedToFollowingDay: false
@@ -347,6 +368,9 @@ struct TravelDocumentParserService {
             date: TravelDocumentParsedDate(day: day, month: month, year: year),
             time: arrivalSchedule.time,
             scheduledDate: nextDay,
+            dateBySwappingDayAndMonth: arrivalSchedule.dateBySwappingDayAndMonth.flatMap {
+                calendar.date(byAdding: .day, value: 1, to: $0)
+            },
             dateWasInferred: true,
             dateFormatIsAmbiguous: arrivalSchedule.dateFormatIsAmbiguous,
             wasAdjustedToFollowingDay: true
@@ -544,6 +568,7 @@ private struct ParsedSchedule {
     let date: TravelDocumentParsedDate
     let time: TravelDocumentParsedTime
     let scheduledDate: Date
+    let dateBySwappingDayAndMonth: Date?
     let dateWasInferred: Bool
     let dateFormatIsAmbiguous: Bool
     let wasAdjustedToFollowingDay: Bool
